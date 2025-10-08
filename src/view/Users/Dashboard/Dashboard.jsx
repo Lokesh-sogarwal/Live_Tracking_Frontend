@@ -1,21 +1,26 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import './dashboard.css';
 import { useNavigate } from "react-router-dom";
 import { ToastContainer, toast } from 'react-toastify';
 import { jwtDecode } from 'jwt-decode';
+import Calendar from 'react-calendar';
+import 'react-calendar/dist/Calendar.css';
+
 import Chart from './Dashboardchart/chart';
-import TotalUsers from './Dashboardchart/total_Users';
-import Total_routes from '../Dashboard/Total_routes/Total_routes'
+import TotalUsers from './Total-container/total_Users';
+import Total_routes from './Total-container/Total_routes';
+import Total_Drivers from './Total-container/total_drivers';
+import AllSchedules from './Total-container/allschedules';
 
 const Dashboard = () => {
   const navigate = useNavigate();
   const token = localStorage.getItem('token');
+  const [selectedDate, setSelectedDate] = useState(new Date());
 
   const isTokenExpired = (token) => {
     try {
       const decoded = jwtDecode(token);
-      const now = Date.now() / 1000;
-      return decoded.exp < now;
+      return decoded.exp < Date.now() / 1000;
     } catch (err) {
       return true;
     }
@@ -24,8 +29,7 @@ const Dashboard = () => {
   const check_password_change = (token) => {
     try {
       const decoded = jwtDecode(token);
-      const is_password_change = decoded.is_password_change;
-      if (is_password_change === false) {
+      if (!decoded.is_password_change) {
         navigate('/defaultchangepassword');
       }
     } catch {
@@ -41,9 +45,7 @@ const Dashboard = () => {
   useEffect(() => {
     if (!token || isTokenExpired(token)) {
       toast.error("Session expired. Please log in again.");
-      setTimeout(() => {
-        logoutUser();
-      }, 3000);
+      setTimeout(logoutUser, 3000);
       return;
     }
     check_password_change(token);
@@ -51,29 +53,42 @@ const Dashboard = () => {
 
   return (
     <>
-      <div className="container">
-        <div className="row dashboard-container text-center">
-          <div className="col-md-6">
-            <div className="User-card d-flex flex-column align-items-center justify-content-center">
-              <TotalUsers />
+      <div className="dash-main">
+        <div className="dashcontainer">
+          <div className="dash-stats">
+            <div className="dash-upper">
+              <div className="total"><TotalUsers /></div>
+              <div className="total"><Total_routes /></div>
+            </div>
+            <div className="dash-lower">
+              <div className="total"><Total_Drivers /></div>
+              <div className="total"><Total_routes /></div>
             </div>
           </div>
-          <div className="col-md-6">
-            <div className="User-card d-flex flex-column align-items-center justify-content-center">
-              <Total_routes />
+
+          <div className="dash-right">
+            <div className="charts">
+              <Chart />
+            </div>
+            <div className="dash-calendar">
+              <Calendar
+                onChange={setSelectedDate}
+                value={selectedDate}
+                tileClassName={({ date, view }) => {
+                  if (view === 'month' && date.toDateString() === new Date().toDateString()) {
+                    return 'highlight-today';
+                  }
+                }}
+              />
             </div>
           </div>
+        </div>
+
+        <div className="dash-schedules">
+          <AllSchedules selectedDate={selectedDate} />
         </div>
       </div>
 
-      <div className="chart-container">
-        <div className="d-flex flex-column align-items-center justify-content-center Chart-card">
-          <Chart />
-        </div>
-        {/* <div className="d-flex flex-column align-items-center justify-content-center Chart-card">
-          <Blog_chart />
-        </div> */}
-      </div>
       <ToastContainer />
     </>
   );

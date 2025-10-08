@@ -1,0 +1,135 @@
+/* ===============================
+   Modern Dashboard Table Design
+==================================*/
+
+.schedule-card {
+  background: #ffffff;
+  border-radius: 16px;
+  box-shadow: 0 6px 25px rgba(0, 0, 0, 0.06);
+  padding: 20px 24px;
+  width: 100%;
+  transition: all 0.3s ease;
+}
+
+.schedule-card:hover {
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.08);
+}
+
+.schedule-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+
+.schedule-header h3 {
+  font-size: 20px;
+  font-weight: 600;
+  color: #333;
+}
+
+.refresh-btn {
+  background: #007bff;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  padding: 8px 14px;
+  cursor: pointer;
+  transition: 0.2s ease;
+  font-size: 14px;
+}
+.refresh-btn:hover {
+  background: #0056d2;
+}
+.schedule-table th {
+    color: white;
+    background-color: #4b6ec0 !important;
+}
+
+
+
+/* Table Container */
+.schedule-table-container {
+  overflow-x: auto;
+  max-height: 450px;
+}
+
+/* Table Styling */
+.schedule-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.schedule-table thead {
+  background: #f8f9fc;
+}
+
+.schedule-table th {
+  text-align: left;
+  padding: 12px 15px;
+  color: #555;
+  font-weight: 600;
+  font-size: 13px;
+  text-transform: uppercase;
+}
+
+.schedule-table td {
+  padding: 14px 15px;
+  border-bottom: 1px solid #eef0f4;
+  color: #333;
+}
+
+.schedule-table tr:hover td {
+  background-color: #f9fbff;
+}
+
+/* Status Badges */
+.status-badge {
+  padding: 6px 12px;
+  border-radius: 12px;
+  font-weight: 600;
+  font-size: 12px;
+  text-transform: capitalize;
+}
+.status-green {
+  background: rgba(0, 200, 81, 0.1);
+  color: #00a848;
+}
+.status-red {
+  background: rgba(255, 64, 64, 0.12);
+  color: #d63333;
+}
+.status-gray {
+  background: rgba(108, 117, 125, 0.12);
+  color: #6c757d;
+}
+
+/* Other Styles */
+.loading {
+  color: #007bff;
+  font-weight: 500;
+  text-align: center;
+  margin-top: 20px;
+}
+.error {
+  color: red;
+  text-align: center;
+  font-weight: 500;
+}
+.no-data {
+  color: #666;
+  text-align: center;
+  padding: 20px;
+}
+
+/* Scrollbar */
+.schedule-table-container::-webkit-scrollbar {
+  height: 6px;
+}
+.schedule-table-container::-webkit-scrollbar-thumb {
+  background: #007bff;
+  border-radius: 6px;
+}

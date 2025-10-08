@@ -53,7 +53,7 @@ const Sidebar = () => {
           <li
             key={item.id}
             onClick={() => handleClick(item)}
-            className={`d-flex align-items-center gap-2 px-3 py-2 rounded list-unstyled sidebar-item ${item.id === 4 ? "text-danger" : "text-dark"}`}
+            className={`sidebar-item ${item.id === 4 ? "text-danger" : "text-dark"}`}
             style={{ cursor: "pointer" }}
           >
             <div className=" cont" style={{color:"black"}}>

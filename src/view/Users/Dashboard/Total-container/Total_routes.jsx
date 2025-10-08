@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import CountUp from 'react-countup';
-import '../../Dashboard/Dashboardchart/total.css';
+import './total.css';
 import { useNavigate } from 'react-router-dom';
 import { FaBlog } from "react-icons/fa";
 
@@ -53,17 +53,17 @@ const Total_Blogs = () => {
       <div className="total-card-count">
         <CountUp end={totalBlogs} duration={2.5} />
       </div>
-      <div className="total-card-subtitle">Total Scheduled Routes</div>
+      <div className="total-card-subtitle">Total Routes</div>
 
       {/* Footer */}
       <div className="total-card-footer">
         <div style={{ cursor: 'pointer' }}>
           <strong>{published}</strong>
-            Completed Routes
+            Completed
         </div>
         <div style={{ cursor: 'pointer' }}>
           <strong>{totalBlogs-published}</strong>
-          In Complete Routes
+          In-Complete
         </div>
       </div>
     </div>
