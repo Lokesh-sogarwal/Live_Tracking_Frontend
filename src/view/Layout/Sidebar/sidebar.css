@@ -27,9 +27,9 @@
 
 /* Sidebar list items */
 .sidebar-item {
-  border-radius: 8px;
-  transition: all 0.2s ease;
-  list-style: none;
+  padding: 0   20px;
+  display: flex;
+  align-items: flex-start;
 }
 
 /* Hover effect */

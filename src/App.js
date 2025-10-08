@@ -2,7 +2,7 @@ import './App.css';
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import LoginSignup from './view/auth/LoginSignup/LoginSignUp';
 import MainContainer from './view/MainContainer/MainContainer';
-import Landing from './view/auth/LandingPage/Landing'
+// import Landing from './view/auth/LandingPage/Landing'
 
 const isLoggedIn = () => !!localStorage.getItem('token');
 
@@ -20,16 +20,16 @@ function App() {
   return (
     <BrowserRouter>
       <Routes>
-        <Route
+        {/* <Route
           path="/"
           element={
             <PublicRoute>
               <Landing />
             </PublicRoute>
           }
-        />
+        /> */}
         <Route
-        path="/login"
+        path="/"
         element={
           <PublicRoute>
             <LoginSignup />

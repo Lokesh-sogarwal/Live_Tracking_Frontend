@@ -12,7 +12,7 @@ import LiveTracking from '../view/Users/Live Tracking/LiveTracking';
 import BusRoute from '../view/Users/Route/BusRoute';
 import AllRoutes from '../view/Users/Route/AllRoutes';
 import BusTracking from '../view/Users/Live Tracking/BusTracking';
-import Landing from '../view/auth/LandingPage/Landing';
+// import Landing from '../view/auth/LandingPage/Landing';
 import BusSchedule from '../view/Users/Schedules/schedule';
 
 
@@ -88,11 +88,11 @@ export const userRoutes = [
     path: "bus_tracking",
     element: <BusTracking />
   },
-  {
-    id: 20,
-    path: "landing_page",
-    element: <Landing />
-  },
+  // {
+  //   id: 20,
+  //   path: "landing_page",
+  //   element: <Landing />
+  // },
   {
     id: 21,
     path: "bus_schedule",

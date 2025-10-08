@@ -73,5 +73,5 @@ export default function Chart() {
     ],
   };
 
-  return <ReactECharts option={option} style={{ height: "350px", width: "100%" }} />;
+  return <ReactECharts option={option} style={{ height: "300px", width: "100%" }} />;
 }
