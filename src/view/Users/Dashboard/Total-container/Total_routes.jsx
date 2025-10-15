@@ -23,18 +23,17 @@ const Total_Blogs = () => {
 
         if (!res.ok) {
           const error = await res.json();
-          console.error("Error fetching total users:", error);
+        
           return;
         }
 
         const rawData = await res.json();
-        console.log("Fetched data:", rawData);
+       
 
         // Example: rawData = [users, totalCount, publishedCount, notpublishedCount]
         settotalBlogs(rawData.total_routes || 0);
         setpublished(rawData.route_completed || 0);
       } catch (error) {
-        console.error("Fetch error:", error);
       }
     }
 

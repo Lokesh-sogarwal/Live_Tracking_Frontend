@@ -11,6 +11,7 @@ import TotalUsers from './Total-container/total_Users';
 import Total_routes from './Total-container/Total_routes';
 import Total_Drivers from './Total-container/total_drivers';
 import AllSchedules from './Total-container/allschedules';
+import Allbuses from './Total-container/Total_buses';
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -62,7 +63,7 @@ const Dashboard = () => {
             </div>
             <div className="dash-lower">
               <div className="total"><Total_Drivers /></div>
-              <div className="total"><Total_routes /></div>
+              <div className="total"><Allbuses /></div>
             </div>
           </div>
 
