@@ -23,18 +23,15 @@ const Total_Users = () => {
 
         if (!res.ok) {
           const error = await res.json();
-          console.error("Error fetching total users:", error);
           return;
         }
 
         const rawData = await res.json();
-        console.log("Fetched data:", rawData);
 
         setTotalUsers(rawData.total_users || 0);
         setActiveUsers(rawData.total_active_users || 0);
 
       } catch (error) {
-        console.error("Fetch error:", error);
       }
     }
 

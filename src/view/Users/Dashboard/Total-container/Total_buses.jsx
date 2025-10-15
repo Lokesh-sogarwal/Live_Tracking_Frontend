@@ -2,11 +2,11 @@ import React, { useEffect, useState } from 'react';
 import CountUp from 'react-countup';
 import './total.css';
 import { useNavigate } from 'react-router-dom';
-import { FaUserFriends } from "react-icons/fa";
+import { FaBus } from "react-icons/fa"; // ✅ Bus icon
 
-const Total_Drivers = () => {
-  const [totalUsers, setTotalUsers] = useState(0);
-  const [activeUsers, setActiveUsers] = useState(0);
+const Total_Buses = () => {
+  const [totalBuses, setTotalBuses] = useState(0);
+  const [activeUsers, setActiveUsers] = useState(0); // optional if you want to show active users still
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -23,15 +23,15 @@ const Total_Drivers = () => {
 
         if (!res.ok) {
           const error = await res.json();
-          console.error("Error fetching total users:", error);
+          console.error("Error fetching total buses:", error);
           return;
         }
 
         const rawData = await res.json();
         console.log("Fetched data:", rawData);
 
-        setTotalUsers(rawData.total_driver || 0);
-        setActiveUsers(rawData.totalActiveDriver || 0);
+        // ✅ Access the total_buses field returned by Flask
+        setTotalBuses(rawData.total_buses || 0);
 
       } catch (error) {
         console.error("Fetch error:", error);
@@ -44,37 +44,23 @@ const Total_Drivers = () => {
   return (
     <div className="total-card">
       {/* Header */}
-      <div className="total-card-header" onClick={() => navigate('/drivers')}>
-        <div><FaUserFriends /> Drivers</div>
+      <div className="total-card-header" onClick={() => navigate('/buses')}>
+        <div><FaBus /> Buses</div>
         <div>{'>'}</div>
       </div>
 
       {/* Count */}
       <div className="total-card-count">
-        <CountUp end={totalUsers} duration={2.5} />
+        <CountUp end={totalBuses} duration={2.5} />
       </div>
-      <div className="total-card-subtitle">Total Drivers</div>
+      <div className="total-card-subtitle">Total Buses</div>
 
       {/* Footer */}
       <div className="total-card-footer">
-        {/* Active Users */}
-        <div 
-          onClick={() => navigate('/active_users')} 
-          style={{ cursor: 'pointer' }}
-        >
-          <strong>{activeUsers}</strong> Active
-        </div>
-
-        {/* Non-Active Users */}
-        <div 
-          onClick={() => navigate('/inactive_users')} 
-          style={{ cursor: 'pointer' }}
-        >
-          <strong>{totalUsers - activeUsers}</strong> Non-Active
-        </div>
+        <div><strong>{totalBuses}</strong> Registered</div>
       </div>
     </div>
   );
 };
 
-export default Total_Drivers;
+export default Total_Buses;

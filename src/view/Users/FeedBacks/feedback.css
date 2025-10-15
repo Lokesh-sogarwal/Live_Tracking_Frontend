@@ -1,0 +1,86 @@
+.feedback-container {
+  max-width: 480px;
+  margin: 60px auto;
+  background: #ffffff15;
+  backdrop-filter: blur(10px);
+  border-radius: 20px;
+  padding: 30px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+  text-align: center;
+  color: black;
+  font-family: "Poppins", sans-serif;
+}
+
+.feedback-container h2 {
+  color: #00bcd4;
+  font-size: 1.8rem;
+  margin-bottom: 10px;
+}
+
+.input-group {
+  text-align: left;
+  margin: 15px 0;
+}
+
+.input-group label {
+  display: block;
+  font-weight: 600;
+  margin-bottom: 6px;
+  color: black;
+}
+
+.input-group input,
+.input-group textarea {
+  width: 100%;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: none;
+  outline: none;
+  font-size: 0.95rem;
+  background: rgba(255, 255, 255, 0.1);
+  color: black;
+}
+
+.input-group textarea {
+  resize: none;
+}
+
+.rating {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 10px;
+}
+
+.stars {
+  display: flex;
+  gap: 6px;
+}
+
+.star {
+  font-size: 24px;
+  cursor: pointer;
+  color: #777;
+  transition: color 0.2s;
+}
+
+.star.active {
+  color: gold;
+}
+
+.submit-btn {
+  background: #00bcd4;
+  border: none;
+  padding: 10px 16px;
+  color: #fff;
+  font-size: 1rem;
+  font-weight: 600;
+  border-radius: 12px;
+  cursor: pointer;
+  margin-top: 15px;
+  transition: 0.3s;
+}
+
+.submit-btn:hover {
+  background: #0097a7;
+}

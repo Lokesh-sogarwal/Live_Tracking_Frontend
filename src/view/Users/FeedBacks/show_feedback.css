@@ -1,0 +1,32 @@
+.feedback-page {
+  padding: 20px;
+  font-family: Arial, sans-serif;
+}
+
+.feedback-title {
+  text-align: center;
+  margin-bottom: 20px;
+}
+
+.feedbacks-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.feedbacks-table th,
+.feedbacks-table td {
+  border: 1px solid #ddd;
+  padding: 10px;
+  text-align: left;
+}
+
+.feedbacks-table th {
+  background-color: #f4f4f4;
+}
+
+.loading-text,
+.no-feedback {
+  text-align: center;
+  margin-top: 20px;
+  font-size: 16px;
+}

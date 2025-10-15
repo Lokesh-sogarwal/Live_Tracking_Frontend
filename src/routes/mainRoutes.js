@@ -14,6 +14,9 @@ import AllRoutes from '../view/Users/Route/AllRoutes';
 import BusTracking from '../view/Users/Live Tracking/BusTracking';
 // import Landing from '../view/auth/LandingPage/Landing';
 import BusSchedule from '../view/Users/Schedules/schedule';
+import Uploaded_documents from '../view/Users/Upload_File/Uploaded_documents';
+import Feedback from '../view/Users/FeedBacks/feedback';
+import ShowFeeback from '../view/Users/FeedBacks/show_feedback';
 
 
 
@@ -97,6 +100,21 @@ export const userRoutes = [
     id: 21,
     path: "bus_schedule",
     element: <BusSchedule />
+  },
+  {
+    id: 22,
+    path:"Uploded_documents",
+    element:<Uploaded_documents/>
+  },
+  {
+    id: 23,
+    path:"Feedback",
+    element:<Feedback/>
+  },
+  {
+    id: 24,
+    path:"Feedbacks",
+    element:<ShowFeeback/>
   }
 
 ];
