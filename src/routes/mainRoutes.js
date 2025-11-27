@@ -17,6 +17,8 @@ import BusSchedule from '../view/Users/Schedules/schedule';
 import Uploaded_documents from '../view/Users/Upload_File/Uploaded_documents';
 import Feedback from '../view/Users/FeedBacks/feedback';
 import ShowFeeback from '../view/Users/FeedBacks/show_feedback';
+import ChatBot from '../view/Users/Chatbot/chatbot';
+import Chat from '../view/Chatbox/chat';
 
 
 
@@ -115,6 +117,16 @@ export const userRoutes = [
     id: 24,
     path:"Feedbacks",
     element:<ShowFeeback/>
+  },
+  {
+    id: 25,
+    path:"chat_bot",
+    element:<ChatBot/>
+  },
+  {
+    id: 26,
+    path:"chat",
+    element:<Chat/>
   }
 
 ];
