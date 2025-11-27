@@ -88,5 +88,17 @@ export const Items = [
         icon: <VscFeedback />,
         link: "/Feedbacks"
     },
+    {
+        id: 13,
+        title:"ChatBot",
+        icon:<MdFeedback/>,
+        link:"/chat_bot"
+    },
+    {
+        id: 14,
+        title:"Chat",
+        icon:<IoIosNotifications/>,
+        link:"/chat"
+    }
 
 ]
