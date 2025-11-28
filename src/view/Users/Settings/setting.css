@@ -1,0 +1,178 @@
+/* ===== Overall Page Layout ===== */
+.layout {
+    border-radius: 20px;
+  display: flex;
+  /* min-height: 100vh; */
+  background: #fff;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+}
+
+/* ===== LEFT: Setting Items Container ===== */
+.setting_container {
+  width: 100%;
+  padding: 18px 12px;
+  border-right: 1px solid #e1e4e8;
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+  background: #ffffff;
+  height: 35vh;
+}
+
+/* Individual items */
+.setting_item {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  padding: 12px 13px;
+  font-size: 14.6px;
+  font-weight: 500;
+  color: #24292f;
+  border-radius: 6px;
+  cursor: pointer;
+  border: 1px solid rgba(0, 0, 0, 0.09);
+  transition: 0.2s;
+  background-color: whitesmoke;
+}
+
+.setting_item:hover {
+  background: #f6f8fa;
+}
+
+/* Icon */
+.setting_icon {
+  font-size: 17.5px;
+  color: #57606a;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 20px;
+}
+
+/* Title */
+.setting_title {
+  flex: 1;
+}
+
+/* ===== RIGHT CARD: Profile Image + Active Pill Card ===== */
+.photo_card {
+  width: 300px;
+  margin: 28px;
+  padding: 22px 16px;
+  border-radius: 10px;
+  border: 1.7px solid #d0d7de;
+  background: #ffffff;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  /* height: 70vh; */
+}
+
+/* Profile image */
+.photo_card img {
+  width: 120px;
+  height: 120px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid #0969da;
+  padding: 3px;
+  background: #fff;
+  margin-bottom: 10px;
+}
+
+/* Profile name */
+.photo_card .profile-name {
+  font-size: 17px;
+  font-weight: 600;
+  color: #111;
+  text-align: center;
+  margin-bottom: 12px;
+}
+
+/* ===== GitHub Active Status Pill ===== */
+.github-active-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 4px 12px;
+  border: 1.6px solid #d0d7de;
+  border-radius: 20px;
+  background: #f6f8fa;
+  color: #24292f;
+  margin-top: 6px;
+  min-width: 125px;
+  justify-content: center;
+}
+
+/* Active green dot */
+.github-active-pill .status-dot,
+.status-dot {
+  width: 8px;
+  height: 8px;
+  background: #2da44e;
+  border-radius: 50%;
+  flex-shrink: 0;
+  animation: pillpulse 1.6s infinite alternate ease-in-out;
+}
+
+/* Text group */
+.github-active-pill .text-group,
+.text-group {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  line-height: 1;
+}
+
+/* Main text */
+.github-active-pill .status-text,
+.status-text {
+  font-size: 13.5px;
+  font-weight: 600;
+}
+
+/* Sub text */
+.github-active-pill .status-sub,
+.status-sub {
+  font-size: 10.5px;
+  color: #57606a;
+  font-weight: 400;
+}
+
+/* Pulse animation */
+@keyframes pillpulse {
+  0% {
+    opacity: 0.6;
+    transform: scale(0.97);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1.15);
+  }
+}
+
+/* ===== Responsive Fix for Mobile ===== */
+@media (max-width: 768px) {
+  .layout {
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .setting_container {
+    width: 100%;
+    border-right: none;
+    border-bottom: 1px solid #e1e4e8;
+    flex-direction: row;
+    overflow-x: auto;
+    justify-content: flex-start;
+  }
+
+  .photo_card {
+    margin: 18px 0;
+    width: 92%;
+    height: auto;
+    max-width: 350px;
+  }
+}
