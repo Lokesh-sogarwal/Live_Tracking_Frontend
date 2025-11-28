@@ -153,6 +153,9 @@
   align-items: center;
   margin-bottom: 10px;
 }
+.dash-calender{
+width: 300px;
+}
 
 .react-calendar__navigation button {
   color: white;
