@@ -1,12 +1,12 @@
 import { MdDashboard } from "react-icons/md";
 import { FaUser, FaUsers, FaMapMarkedAlt } from "react-icons/fa"
-import { TbRouteSquare } from "react-icons/tb";
 import { IoIosNotifications } from "react-icons/io";
 import { MdFeedback, MdSchedule, MdOutlineFileUpload } from "react-icons/md";
-import { FaBusAlt } from "react-icons/fa";
+import { FiMessageSquare } from "react-icons/fi";
 import { VscFeedback } from "react-icons/vsc";
-import { BsDatabaseAdd } from "react-icons/bs";
+import { MdSupportAgent } from "react-icons/md";
 import { IoDocumentSharp } from "react-icons/io5";
+import { FaBusAlt } from "react-icons/fa";
 
 export const Items = [
     {
@@ -15,12 +15,12 @@ export const Items = [
         icon: <MdDashboard />,
         link: "/dashboard"
     },
-    {
-        id: 2,
-        title: "Active Users",
-        icon: <FaUsers />,
-        link: "/active_users"
-    },
+    // {
+    //     id: 2,
+    //     title: "Active Users",
+    //     icon: <FaUsers />,
+    //     link: "/active_users"
+    // },
     // {
     //     id: 3,
     //     title: "Users",
@@ -39,31 +39,27 @@ export const Items = [
         icon: <FaMapMarkedAlt />,
         link: "live_tracking"
     },
+
     {
-        id: 5,
-        title: "Create Route",
-        icon: <TbRouteSquare />,
-        link: "/Create_routes"
+        id: 14,
+        title: "Chat",
+        icon: <FiMessageSquare />,
+        link: "/chat"
     },
-    {
-        id: 12,
-        title: "Register Bus",
-        icon: <BsDatabaseAdd />,
-        link: "/Bus_register"
-    },
-    {
-        id: 6,
-        title: "Buses",
-        icon: <FaBusAlt />,
-        link: "/Bus_details"
-    },
+
     {
         id: 9,
         title: "Schedule",
         icon: <MdSchedule />,
         link: "/bus_schedule"
     },
-    
+    // {
+    //     id: 6,
+    //     title: "Buses",
+    //     icon: <FaBusAlt />,
+    //     link: "/Bus_details"
+    // },
+
     {
         id: 10,
         title: "Upload Document",
@@ -76,29 +72,18 @@ export const Items = [
         icon: <IoDocumentSharp />,
         link: "/Uploded_documents"
     },
+
     {
-        id: 11,
-        title: "Feedback",
-        icon: <VscFeedback />,
-        link: "/Feedback"
-    },
-    {
-        id: 11,
+        id: 16,
         title: "Feedbacks & Complaints",
         icon: <VscFeedback />,
         link: "/Feedbacks"
     },
     {
         id: 13,
-        title:"ChatBot",
-        icon:<MdFeedback/>,
-        link:"/chat_bot"
+        title: "ChatBot",
+        icon: <MdSupportAgent />,
+        link: "/chat_bot"
     },
-    {
-        id: 14,
-        title:"Chat",
-        icon:<IoIosNotifications/>,
-        link:"/chat"
-    }
 
 ]

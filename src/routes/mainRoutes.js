@@ -4,7 +4,7 @@ import Profile from '../view/Users/Profile/Profile';
 import Userdetails from '../view/Users/UserDeatils/UserDetails'; 
 // import Change_password from '../view/users/ChangePassword/Changepassword';
 // import Otp from '../view/auth/OTP/Otp';
-import Active_Users from '../view/Users/Dashboard/Active_user_details/active_user_details';
+import Active_Users from '../view/Users/Active Users/active_users';
 // import Chat from '../view/Chatbox/chat';
 import DriverDetails from '../view/Users/Drivers/Driver_details';
 import DriverUpload from '../view/Users/Upload_File/DriverUpload';
@@ -19,6 +19,9 @@ import Feedback from '../view/Users/FeedBacks/feedback';
 import ShowFeeback from '../view/Users/FeedBacks/show_feedback';
 import ChatBot from '../view/Users/Chatbot/chatbot';
 import Chat from '../view/Chatbox/chat';
+import Settings from '../view/Users/Settings/setting';
+import EditProfile from '../view/Users/Settings/editProfile';
+
 
 
 
@@ -127,8 +130,17 @@ export const userRoutes = [
     id: 26,
     path:"chat",
     element:<Chat/>
+  },
+  {
+    id: 27,
+    path:"profile_settings",
+    element:<Settings/>
+  },
+  {
+    id: 28,
+    path:"edit_profile",
+    element:<EditProfile/>
   }
-
 ];
 
 

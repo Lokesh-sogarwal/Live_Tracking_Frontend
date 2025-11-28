@@ -148,14 +148,20 @@ const Profile = () => {
 
   return (
     <div className="layout">
-      <div className="background">
-        {/* <img src={myimage} alt="Background" /> */}
+      <div className="profile-image">
+        <img src={profileimg} alt="Profile" />
+        <p style={{ textAlign: "center", fontWeight: 600, fontSize: "16px" }}>{user.fullname}</p>
+
+        <div className="active_box"></div>
       </div>
       <div className="profileContainer">
         <div className="details">
           <h2>User Profile</h2>
           {error && <p style={{ color: "red" }}>{error}</p>}
-          <div className="user-details">
+          <div className="user_details">
+            {/* <div className="modal-buttons">
+            <button onClick={handleEdit}>Edit Profile</button>
+          </div> */}
 
             {editMode ? (
               <>
@@ -212,9 +218,6 @@ const Profile = () => {
             ) : (
               <>
                 <p>
-                  Fullname: <span>{user.fullname}</span>
-                </p>
-                <p>
                   Email: <span>{user.email}</span>
                 </p>
                 <p>
@@ -236,12 +239,7 @@ const Profile = () => {
             )}
           </div>
         </div>
-        <div className="profile-image">
-          <img src={profileimg} alt="Profile" />
-          <div className="modal-buttons">
-            <button onClick={handleEdit}>Edit Profile</button>
-          </div>
-        </div>
+
         <ToastContainer />
       </div>
     </div>
