@@ -10,7 +10,7 @@ const DocumentsList = () => {
   const fetchDocuments = async () => {
     try {
       const token = localStorage.getItem("token");
-      const response = await fetch("http://127.0.0.1:5000/data/get_documents", {
+      const response = await fetch("http://127.0.0.1:5001/data/get_documents", {
         headers: { Authorization: `Bearer ${token}` },
       });
       const data = await response.json();
@@ -29,7 +29,7 @@ const DocumentsList = () => {
   const handleVerify = async (id) => {
     try {
       const token = localStorage.getItem("token");
-      const res = await fetch(`http://127.0.0.1:5000/data/verify_document/${id}`, {
+      const res = await fetch(`http://127.0.0.1:5001/data/verify_document/${id}`, {
         method: "POST",
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -52,7 +52,7 @@ const DocumentsList = () => {
   const handleReject = async (id) => {
     try {
       const token = localStorage.getItem("token");
-      const res = await fetch(`http://127.0.0.1:5000/data/reject_document/${id}`, {
+      const res = await fetch(`http://127.0.0.1:5001/data/reject_document/${id}`, {
         method: "POST",
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -115,7 +115,7 @@ const DocumentsList = () => {
                   <td>{statusLabel}</td>
                   <td>
                     <a
-                      href={`http://127.0.0.1:5000/data/uploads/${doc.document_path}`}
+                      href={`http://127.0.0.1:5001/data/uploads/${doc.document_path}`}
                       target="_blank"
                       rel="noopener noreferrer"
                     >
