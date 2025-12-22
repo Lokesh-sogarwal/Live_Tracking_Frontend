@@ -10,7 +10,7 @@ const AllSchedules = ({ selectedDate }) => {
     setLoading(true);
     const token = localStorage.getItem("token");
 
-    fetch("http://localhost:5000/bus/schedules", {
+    fetch("http://localhost:5001/bus/schedules", {
       method: "GET",
       headers: {
         "Content-Type": "application/json",

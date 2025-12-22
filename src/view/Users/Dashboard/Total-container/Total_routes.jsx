@@ -12,7 +12,7 @@ const Total_Blogs = () => {
   useEffect(() => {
     async function fetchData() {
       try {
-        const res = await fetch("http://localhost:5000/data/total_routes", {
+        const res = await fetch("http://localhost:5001/data/total_routes", {
           method: "GET",
           headers: {
             "Content-Type": "application/json",

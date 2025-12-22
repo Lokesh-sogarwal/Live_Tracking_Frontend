@@ -79,7 +79,7 @@ const DriverDetails = () => {
     const fetchUsers = async () => {
       setLoading(true);
       try {
-        const res = await fetch("http://localhost:5000/view/driver_details", {
+        const res = await fetch("http://localhost:5001/view/driver_details", {
           method: "GET",
           headers: {
             "Content-Type": "application/json",
@@ -104,7 +104,7 @@ const DriverDetails = () => {
     if (!token || isTokenExpired(token)) return logoutUser();
     setDeleting(true);
     try {
-      const res = await fetch("http://localhost:5000/view/delete", {
+      const res = await fetch("http://localhost:5001/view/delete", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -128,7 +128,7 @@ const DriverDetails = () => {
     if (!selectedUser) return;
     setUpdating(true);
     try {
-      const res = await fetch("http://localhost:5000/view/edit_user_details", {
+      const res = await fetch("http://localhost:5001/view/edit_user_details", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -243,7 +243,7 @@ const DriverDetails = () => {
       formData.append("expiry_date", expiry_date);
 
       const res = await fetch(
-        `http://localhost:5000/view/upload/${selectedUser.user_uuid}`,
+        `http://localhost:5001/view/upload/${selectedUser.user_uuid}`,
         {
           method: "POST",
           headers: { Authorization: "Bearer " + token },
@@ -277,7 +277,7 @@ const DriverDetails = () => {
 
     setCreating(true);
     try {
-      const res = await fetch("http://localhost:5000/auth/signup", {
+      const res = await fetch("http://localhost:5001/auth/signup", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

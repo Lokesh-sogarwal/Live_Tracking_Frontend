@@ -58,7 +58,7 @@ const BusTracking = () => {
     const fetchRoute = async () => {
       try {
         const res = await fetch(
-          `http://localhost:5000/view/api/get_route/${startLat}/${startLng}/${endLat}/${endLng}`,
+          `http://localhost:5001/view/api/get_route/${startLat}/${startLng}/${endLat}/${endLng}`,
           {
             headers: {
               Authorization: `Bearer ${token}`,
@@ -100,7 +100,7 @@ const BusTracking = () => {
     const fetchLocation = async () => {
       try {
         const res = await fetch(
-          `http://localhost:5000/view/get_location/${schedule.bus_id}`,
+          `http://localhost:5001/view/get_location/${schedule.bus_id}`,
           {
             headers: {
               Authorization: `Bearer ${token}`,

@@ -42,7 +42,7 @@ const LoginSignup = () => {
 
     if (action === "Login") {
       try {
-        const res = await fetch("http://localhost:5000/auth/login", {
+        const res = await fetch("http://localhost:5001/auth/login", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(formData),
@@ -67,7 +67,7 @@ const LoginSignup = () => {
       }
     } else {
       try {
-        const res = await fetch("http://localhost:5000/auth/signup", {
+        const res = await fetch("http://localhost:5001/auth/signup", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({

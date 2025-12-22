@@ -27,7 +27,7 @@ const EditProfile = () => {
 
   const fetchProfile = async () => {
     try {
-      const res = await fetch("http://localhost:5000/view/profile", {
+      const res = await fetch("http://localhost:5001/view/profile", {
         headers: { Authorization: "Bearer " + token },
         credentials: "include",
       });
@@ -74,7 +74,7 @@ const EditProfile = () => {
       form.append("role", user.role);
       if (selectedFile) form.append("profileimg", selectedFile);
 
-      const res = await fetch("http://localhost:5000/auth/profile", {
+      const res = await fetch("http://localhost:5001/auth/profile", {
         method: "PUT",
         headers: { Authorization: "Bearer " + token },
         body: form,

@@ -35,7 +35,7 @@ export default function Chat() {
     try {
       const token = localStorage.getItem("token");
 
-      const res = await fetch("http://localhost:5000/chatbot/chat", {
+      const res = await fetch("http://localhost:5001/chatbot/chat", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

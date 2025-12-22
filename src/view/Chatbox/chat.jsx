@@ -35,7 +35,7 @@ const Chat = () => {
 
     // Initialize socket only once
     useEffect(() => {
-        socket = io("http://localhost:5000", {
+        socket = io("http://localhost:5001", {
             transports: ["websocket"],
             withCredentials: true,
         });
@@ -106,7 +106,7 @@ const Chat = () => {
         });
 
         try {
-            const res = await fetch(`http://localhost:5000/chat/history/${user.id}`, {
+            const res = await fetch(`http://localhost:5001/chat/history/${user.id}`, {
                 method: "GET",
                 headers: {
                     "Content-Type": "application/json",

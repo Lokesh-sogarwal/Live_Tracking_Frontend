@@ -216,7 +216,7 @@ const RouteCreation = () => {
       }
 
       const token = localStorage.getItem("token");
-      const response = await fetch("http://127.0.0.1:5000/bus/bus_route", {
+      const response = await fetch("http://127.0.0.1:5001/bus/bus_route", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
