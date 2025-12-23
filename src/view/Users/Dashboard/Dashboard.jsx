@@ -9,7 +9,7 @@ import Total_routes from "./Total-container/Total_routes";
 import Total_Drivers from "./Total-container/total_drivers";
 import AllSchedules from "./Total-container/allschedules";
 import Allbuses from "./Total-container/Total_buses";
-import LiveMap from "../../../Components/";
+import LiveMap from "../../../Components/LiveMap";
 
 const Dashboard = () => {
   const navigate = useNavigate();
