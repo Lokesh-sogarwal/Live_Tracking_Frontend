@@ -1,7 +1,6 @@
-import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet";
+import { MapContainer, TileLayer, Marker, Popup, useMap } from "react-leaflet";
 import { useEffect, useState } from "react";
 import L from "leaflet";
-import io from "socket.io-client";
 import "leaflet/dist/leaflet.css";
 
 // Fix default marker icon issue
@@ -15,48 +14,70 @@ L.Icon.Default.mergeOptions({
     "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
 });
 
-// 🔥 CONNECT SOCKET
-const socket = io("http://192.168.1.13:5001", {
-  transports: ["websocket"],
-});
+// Component to auto-move map
+const RecenterMap = ({ lat, lng }) => {
+  const map = useMap();
+  useEffect(() => {
+    map.setView([lat, lng], 16);
+  }, [lat, lng, map]);
+  return null;
+};
 
 const LiveMap = () => {
-  const [location, setLocation] = useState({
-    lat: 28.6139,
-    lng: 77.2090, // Default: Delhi
-  });
+  const [location, setLocation] = useState(null);
+  const [error, setError] = useState("");
 
   useEffect(() => {
-    socket.on("connect", () => {
-      console.log("✅ Socket connected");
-    });
+    if (!navigator.geolocation) {
+      setError("Geolocation is not supported by your browser");
+      return;
+    }
 
-    // 🔴 Listen for live location
-    socket.on("live_location", (data) => {
-      setLocation({
-        lat: data.latitude,
-        lng: data.longitude,
-      });
-    });
+    // 🔥 Watch live position
+    const watchId = navigator.geolocation.watchPosition(
+      (position) => {
+        setLocation({
+          lat: position.coords.latitude,
+          lng: position.coords.longitude,
+        });
+      },
+      (err) => {
+        setError("Location permission denied");
+        console.error(err);
+      },
+      {
+        enableHighAccuracy: true,
+        maximumAge: 0,
+        timeout: 10000,
+      }
+    );
 
-    return () => {
-      socket.off("live_location");
-    };
+    return () => navigator.geolocation.clearWatch(watchId);
   }, []);
+
+  if (error) {
+    return <p style={{ color: "red" }}>{error}</p>;
+  }
+
+  if (!location) {
+    return <p>📍 Fetching your live location...</p>;
+  }
 
   return (
     <MapContainer
       center={[location.lat, location.lng]}
-      zoom={14}
+      zoom={16}
       style={{ width: "100%", height: "100%" }}
     >
+      <RecenterMap lat={location.lat} lng={location.lng} />
+
       <TileLayer
         attribution='&copy; OpenStreetMap contributors'
         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
       />
 
       <Marker position={[location.lat, location.lng]}>
-        <Popup>🚍 Live Vehicle Location</Popup>
+        <Popup>📍 You are here</Popup>
       </Marker>
     </MapContainer>
   );
