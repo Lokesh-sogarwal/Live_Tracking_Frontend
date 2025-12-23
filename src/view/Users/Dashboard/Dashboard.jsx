@@ -9,7 +9,7 @@ import Total_routes from "./Total-container/Total_routes";
 import Total_Drivers from "./Total-container/total_drivers";
 import AllSchedules from "./Total-container/allschedules";
 import Allbuses from "./Total-container/Total_buses";
-import LiveMap from "../../../Components/LiveMap";
+import LiveMap from "../../../Components/";
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -46,7 +46,7 @@ const Dashboard = () => {
             </div>
 
             <div className="dash-lower">
-              <div className="total"><Total_Driver /></div>
+              <div className="total"><Total_Drivers /></div>
               <div className="total"><Allbuses /></div>
             </div>
           </div>
