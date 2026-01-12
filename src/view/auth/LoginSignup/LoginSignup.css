@@ -6,15 +6,16 @@
   align-items: center;
   flex-direction: column;
   height: 100vh;
-  background: linear-gradient(135deg, #2a2a72, #009ffd);
+  background: linear-gradient(135deg, #f0f4f8, #d9e2ec); /* Softer modern gradient */
   overflow: hidden;
+  font-family: 'Poppins', sans-serif; /* Explicitly use Poppins */
 }
 
 .login-signup-container {
   width: 90%;
   max-width: 1200px;
   display: flex;
-  gap: 20px;
+  gap: 40px; /* More spacing */
   align-items: center;
   justify-content: center;
 }
@@ -32,16 +33,18 @@
 }
 
 .leftcontainer img {
-  max-width: 400px;
+  max-width: 450px; /* Slightly larger image */
   width: 100%;
   height: auto;
+  filter: drop-shadow(0 10px 20px rgba(0,0,0,0.1));
 }
 
 .text {
-  font-family: "Segoe UI", sans-serif;
-  color: white;
-  font-size: 18px;
-  line-height: 1.5;
+  font-family: 'Poppins', sans-serif;
+  color: #333; /* Darker text for light bg */
+  font-size: 20px;
+  line-height: 1.6;
+  font-weight: 500;
 }
 
 /* RIGHT SIDE (FLIP CARD CONTAINER) */

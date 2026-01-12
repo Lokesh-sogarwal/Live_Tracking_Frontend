@@ -51,14 +51,16 @@ function DropButton() {
                 {item.icon} {item.title}
               </div>
             ) : (
-              <a
+              <div
                 key={item.id}
-                href={item.path}
                 className="menu-item"
-                onClick={() => setIsOpen(false)} // close after navigation
+                onClick={() => {
+                  navigate(item.path);
+                  setIsOpen(false);
+                }}
               >
                 {item.icon} {item.title}
-              </a>
+              </div>
             )
           )}
         </div>

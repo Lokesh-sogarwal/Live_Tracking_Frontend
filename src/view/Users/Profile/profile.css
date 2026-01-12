@@ -1,13 +1,19 @@
 /* ===== Layout Wrapper ===== */
 .layout {
   display: flex;
-  /* min-height: 100vh; */
-  font-family: Arial, sans-serif;
-  align-items: center;
+  font-family: 'Poppins', sans-serif;
+  align-items: stretch; /* Stretch to match heights if needed */
   position: relative;
   z-index: 10;
   background-color: transparent !important;
-  /* justify-content: center; */
+  gap: 30px; /* More breathing room */
+  animation: firstName 0.8s cubic-bezier(0.2, 0.8, 0.2, 1);
+  padding: 20px;
+}
+
+@keyframes firstName { /* Renaming animation to something generic but custom */
+  from { opacity: 0; transform: translateY(30px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
 /* ===== Background Image ===== */
@@ -19,169 +25,218 @@
   top: 0;
   left: 0;
   z-index: -10;
-  opacity: 0.25; /* optional soft fade */
+  opacity: 0.25;
 }
 
-/* ===== Profile Main Container ===== */
+/* ===== Profile Main Container (Details Side) ===== */
 .profileContainer {
-  flex: 1;
+  flex: 3; /* Give more width to details */
   display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  gap: 24px;
-  padding: 20px 20px;
-  overflow-y: auto;
-  position: relative;
+  flex-direction: column;
+  padding: 0;
   z-index: 5;
 }
 
-/* ===== Profile Card (left side) ===== */
+/* ===== Profile Card (Details) ===== */
 .details {
-  flex: 5 1;
-  background: #ffffff;
-  padding: 24px;
-  border-radius: 12px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
-  width: 100%;
-  max-width: 800px;
+  background: rgba(255, 255, 255, 0.95); /* High opacity for readability */
+  padding: 40px;
+  border-radius: 24px;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.06); /* Soft, distinct shadow */
+  width: 88%;
+  border: 1px solid white;
+  backdrop-filter: blur(10px);
 }
 
 /* ===== Title ===== */
 .details h2 {
-  text-align: center;
-  margin-bottom: 20px;
-  color: #222;
-  font-size: 22px;
-  font-weight: 600;
+  text-align: left;
+  margin-bottom: 30px;
+  color: #1a1a1a;
+  font-size: 1.75rem;
+  font-weight: 700;
+  border-bottom: 2px solid #f0f2f5;
+  padding-bottom: 15px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
 }
 
-/* ===== Profile Text Fields ===== */
+.details h2::before {
+    content: '';
+    display: block;
+    width: 6px;
+    height: 24px;
+    background: #007bff;
+    border-radius: 4px;
+}
+
+/* ===== Profile Text Fields Grid ===== */
+.user_details {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); /* Two columns effectively */
+    gap: 20px;
+}
+
+/* Specific styling for p tags becoming cards */
 .user_details p {
-  margin: 10px 0;
-  font-size: 15px;
-  color: #444;
+  margin: 0;
+  font-size: 0.9rem;
+  color: #777;
   display: flex;
   flex-direction: column;
+  background-color: white;
+  padding: 16px 20px;
+  border-radius: 16px;
+  border: 1px solid #eef0f5;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.02);
+  transition: all 0.3s ease;
+}
+
+.user_details p:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 8px 20px rgba(0,0,0,0.06);
+  border-color: #007bff;
 }
 
 .user_details span {
   font-weight: 600;
-  color: #222;
-  background: #f8f9fa;
-  padding: 6px 10px;
-  border-radius: 6px;
-  margin-top: 4px;
+  color: #333;
+  margin-top: 8px;
+  font-size: 1.1rem;
+  background: transparent;
+  padding: 0;
 }
 
-/* ===== Input Fields ===== */
-.details input {
+/* Input Fields inside the grid */
+.user_details input {
+  margin-top: 8px;
   width: 100%;
-  padding: 9px;
-  border: 1px solid #bbb;
-  border-radius: 6px;
-  font-size: 14px;
+  padding: 12px;
+  border: 1px solid #e0e0e0;
+  border-radius: 10px;
+  font-size: 1rem;
   outline: none;
-  transition: 0.2s ease;
+  background-color: #f9f9f9;
+  transition: all 0.2s ease;
 }
 
-.details input:focus {
+.user_details input:focus {
   border-color: #007bff;
+  background-color: white;
   box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.15);
 }
 
-/* ===== Buttons Layout ===== */
-.buttons,
-.modal-buttons {
+/* Buttons Area */
+.buttons, .modal-buttons {
   display: flex;
-  justify-content: center;
-  gap: 12px;
-  margin-top: 18px;
-  flex-wrap: wrap;
+  justify-content: flex-start;
+  gap: 16px;
+  margin-top: 32px;
+  width: 100%;
+  grid-column: 1 / -1; /* Make buttons span full width */
+  border-top: 1px solid #f0f2f5;
+  padding-top: 24px;
 }
 
-.buttons button,
-.modal-buttons button {
-  flex: 1;
-  min-width: 140px;
-  max-width: 150px;
-  padding: 10px;
-  background-color: #007bff;
-  color: #fff;
+.buttons button {
+  padding: 12px 30px;
+  background: #007bff;
+  color: white;
   border: none;
-  border-radius: 6px;
-  font-size: 14px;
-  font-weight: 500;
+  border-radius: 12px;
+  font-size: 1rem;
+  font-weight: 600;
   cursor: pointer;
-  transition: 0.2s ease;
+  transition: all 0.2s ease;
+  box-shadow: 0 4px 12px rgba(0, 123, 255, 0.25);
 }
 
-.buttons button:hover,
-.modal-buttons button:hover {
-  background-color: #0056b3;
-  transform: translateY(-1px);
+.buttons button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 16px rgba(0, 123, 255, 0.35);
+  background: #0069d9;
 }
 
-.buttons button:active {
-  transform: scale(0.97);
-}
-
-/* ===== Error Message ===== */
-.details .error {
-  text-align: center;
-  font-size: 14px;
-  color: red;
-  background: #ffecec;
-  border: 1px solid #ffb6b6;
-  padding: 8px;
-  border-radius: 6px;
-}
-
-/* ===== Loading Box ===== */
-.profileContainer .d-flex {
-  font-size: 16px;
+.buttons button:last-child {
+  background: white;
   color: #555;
-  gap: 10px;
+  border: 1px solid #ddd;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.05); /* Softer shadow for secondary btn */
 }
 
-/* ===== Profile Image Box (right side) ===== */
+.buttons button:last-child:hover {
+    background: #f8f9fa;
+    color: #333;
+    border-color: #ccc;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+
+/* ===== Profile Image Card (Left Side) ===== */
 .profile-image {
-  margin-left: 50px;
-  flex: 1 ;
+  flex: 1;
   display: flex;
   flex-direction: column;
   justify-content: center;
   align-items: center;
-  background: #ffffff;
-  border-radius: 12px;
-  padding: 20px 16px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
-  width: 100%;
-  max-width: 400px;
-  height: 55vh;
+  background: white;
+  border-radius: 24px;
+  padding: 40px 20px;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.06);
+  border: 1px solid white;
+  max-height: 500px; /* Don't let it grow infinitely */
+  position: sticky;
+  top: 20px; /* Sticky effect on scroll */
 }
 
 .profile-image img {
-  width: 100%;
-  max-width: 170px;
+  width: 180px;
+  height: 180px;
   border-radius: 50%;
   object-fit: cover;
-  margin-bottom: 14px;
-  box-shadow: 0 4px 14px rgba(0,0,0,0.12);
+  margin-bottom: 24px;
+  box-shadow: 0 10px 25px rgba(0,123,255,0.2);
+  border: 6px solid #f0f7ff;
+  transition: transform 0.4s ease;
+}
+
+.profile-image:hover img {
+    transform: scale(1.05) rotate(3deg);
+}
+
+.profile-image p {
+    font-size: 1.4rem;
+    font-weight: 700;
+    margin: 0;
+    color: #333;
+    text-align: center;
+}
+
+/* Decor bar */
+.active_box {
+    width: 60px;
+    height: 6px;
+    background: #007bff;
+    border-radius: 20px;
+    margin-top: 16px;
+    opacity: 0.8;
 }
 
 /* ===== Responsive Fix ===== */
 @media (max-width: 992px) {
-  .profileContainer {
-    flex-direction: column;
-    align-items: center;
-    gap: 18px;
+  .layout {
+    flex-direction: column-reverse; /* Stack image on top usually, check preference */
+    align-items: stretch;
   }
 
-  .details {
-    max-width: 500px;
+  .profileContainer, .profile-image {
+    width: 100%;
+    max-width: none;
+    margin: 0;
   }
-
+  
   .profile-image {
-    margin-top: 8px;
+      margin-bottom: 20px;
   }
 }
+

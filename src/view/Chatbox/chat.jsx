@@ -35,9 +35,10 @@ const Chat = () => {
 
     // Initialize socket only once
     useEffect(() => {
-        socket = io("http://localhost:5001", {
+        socket = io("http://localhost:5001", { 
             transports: ["websocket"],
             withCredentials: true,
+            path: "/socket.io"
         });
 
         socket.on("connect", () => console.log("Connected to socket server"));
@@ -106,7 +107,7 @@ const Chat = () => {
         });
 
         try {
-            const res = await fetch(`http://localhost:5001/chat/history/${user.id}`, {
+            const res = await fetch(`/chat/history/${user.id}`, {
                 method: "GET",
                 headers: {
                     "Content-Type": "application/json",
@@ -127,8 +128,7 @@ const Chat = () => {
     return (
         <div className="ChatApp">
             <div className="UsersList">
-                <h3
-                    style={{ padding: "10px 15px", fontSize: "1.25rem", fontWeight: "bold", borderBottom: "1px solid black" }}>Chats</h3>
+                <h3>Chats</h3>
                 {loadingUsers ? (
                     <p>Loading users...</p>
                 ) : users.length === 0 ? (
@@ -160,44 +160,24 @@ const Chat = () => {
                             {loadingMessages ? (
                                 <p>Loading messages...</p>
                             ) : messages.length === 0 ? (
-                                <p>No messages yet. Start the conversation!</p>
+                                <p style={{flexGrow: 1, display: 'flex', justifyContent: 'center', alignItems: 'center'}}>No messages yet. Start the conversation!</p>
                             ) : (
                                 messages.map((msg, index) => {
                                     const isMe = msg.sender_id === currentUser.id;
                                     return (
                                         <div
                                             key={index}
-                                            className="Message"
-                                            style={{
-                                                display: "flex",
-                                                justifyContent: isMe ? "flex-end" : "flex-start",
-                                                marginBottom: "8px",
-                                            }}
+                                            className={`message-bubble ${isMe ? "sent" : "received"}`}
                                         >
-                                            <div
-                                                style={{
-                                                    background: isMe ? "#4B6EC0" : "#f1f0f0",
-                                                    color: isMe ? "white" : "black",
-                                                    padding: "10px 35px",
-                                                    borderRadius: "20px",
-                                                    maxWidth: "60%",
-                                                    wordBreak: "break-word",
-                                                    display: "flex",
-                                                    justifyContent: "space-between",
-                                                    flexDirection: "column",
-                                                    textAlign: "right" ,
-                                                }}
-                                            >
-                                                <span style={{ fontWeight: "bold", fontSize: "0.90rem" }}>
-                                                    {isMe ? "You" : selectedUser.name}
-                                                </span>
-                                                <p style={{ margin: 0 }}>{msg.msg}</p>
-                                                <span style={{ fontSize: "0.75rem", color: isMe ? "white" : "black" }}>
-                                                    {msg.timestamp
-                                                        ? new Date(msg.timestamp).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })
-                                                        : ""}
-                                                </span>
-                                            </div>
+                                            <span className="message-sender">
+                                                {isMe ? "You" : selectedUser.name}
+                                            </span>
+                                            <p style={{ margin: 0 }}>{msg.msg}</p>
+                                            <span className="message-time">
+                                                {msg.timestamp
+                                                    ? new Date(msg.timestamp).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })
+                                                    : ""}
+                                            </span>
                                         </div>
                                     );
                                 })

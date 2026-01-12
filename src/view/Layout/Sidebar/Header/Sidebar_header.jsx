@@ -1,12 +1,17 @@
 import React from 'react'
-import myimage from '../../../../Assets/logo.png';
+import { FaRoute } from "react-icons/fa";
 import './header.css';
 
 const Sidebar_header = () => {
   return (
     <div className="header-logo">
-      <img src={myimage} alt="logo" width={65} />
-      <span>Gowheeler</span>
+      <div className="logo-icon">
+        <FaRoute />
+      </div>
+      <div className="logo-text">
+        <span>Route</span>
+        <span className="highlight">Master</span>
+      </div>
     </div>
   )
 }

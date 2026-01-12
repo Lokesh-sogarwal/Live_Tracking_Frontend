@@ -3,7 +3,6 @@ import "./profile.css";
 import { jwtDecode } from "jwt-decode";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
-import Sidebar from "../../Layout/Sidebar/Sidebar";
 import profileimg from "../../../Assets/male-avatar-boy-face-man-user-9-svgrepo-com.svg";
 import { faSpinner } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
@@ -49,7 +48,7 @@ const Profile = () => {
     const fetchProfile = async () => {
       setLoading(true);
       try {
-        const res = await fetch("http://localhost:5001/view/profile", {
+        const res = await fetch("/view/profile", {
           method: "GET",
           headers: {
             "Content-Type": "application/json",
@@ -68,6 +67,7 @@ const Profile = () => {
           fathername: data.fathername || "",
           mothername: data.mothername || "",
           role: data.role || "",
+          profileimg: data.profileimg || null,
         });
 
         setFormData({
@@ -77,6 +77,7 @@ const Profile = () => {
           fathername: data.fathername || "",
           mothername: data.mothername || "",
           role: data.role || "",
+          profileimg: data.profileimg || null,
         });
       } catch (err) {
         setError(err.message);
@@ -94,7 +95,7 @@ const Profile = () => {
 
   const handleSave = async () => {
     try {
-      const res = await fetch("http://localhost:5001/auth/profile", {
+      const res = await fetch("/auth/profile", {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",

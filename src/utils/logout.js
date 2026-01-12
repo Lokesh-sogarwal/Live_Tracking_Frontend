@@ -2,7 +2,7 @@ export const Logout = async (token) => {
   if (!token) return;
 
   try {
-    const res = await fetch("http://localhost:5000/auth/logout", {
+    const res = await fetch("/auth/logout", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",

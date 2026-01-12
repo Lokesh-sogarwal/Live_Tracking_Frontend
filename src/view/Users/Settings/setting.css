@@ -1,52 +1,75 @@
 /* ===== Overall Page Layout ===== */
 .layout {
-    border-radius: 20px;
+  border-radius: 0; /* Handled by parent container usually, but reset here to be safe */
   display: flex;
-  /* min-height: 100vh; */
-  background: #fff;
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  background: transparent;
+  font-family: 'Poppins', sans-serif;
+  gap: 24px;
+  animation: slideInRight 0.5s ease-out;
+}
+
+@keyframes slideInRight {
+  from { opacity: 0; transform: translateX(20px); }
+  to { opacity: 1; transform: translateX(0); }
 }
 
 /* ===== LEFT: Setting Items Container ===== */
 .setting_container {
-  width: 100%;
-  padding: 18px 12px;
-  border-right: 1px solid #e1e4e8;
+  flex: 2;
+  padding: 0;
+  border-right: none;
   display: flex;
   flex-direction: column;
-  gap: 9px;
-  background: #ffffff;
-  height: 35vh;
+  gap: 16px;
+  background: transparent;
+  height: auto;
 }
 
 /* Individual items */
 .setting_item {
   display: flex;
   align-items: center;
-  gap: 11px;
-  padding: 12px 13px;
-  font-size: 14.6px;
+  gap: 16px;
+  padding: 18px 24px;
+  font-size: 1rem;
   font-weight: 500;
-  color: #24292f;
-  border-radius: 6px;
+  color: #333;
+  border-radius: 16px;
   cursor: pointer;
-  border: 1px solid rgba(0, 0, 0, 0.09);
-  transition: 0.2s;
-  background-color: whitesmoke;
+  border: 1px solid rgba(255, 255, 255, 0.6);
+  background: white;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.03);
+  transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
 }
 
 .setting_item:hover {
-  background: #f6f8fa;
+  background: white;
+  transform: translateY(-4px) scale(1.01);
+  box-shadow: 0 10px 25px rgba(0,0,0,0.08);
+  border-color: #007bff;
+}
+
+.setting_item:active {
+  transform: scale(0.98);
 }
 
 /* Icon */
 .setting_icon {
-  font-size: 17.5px;
-  color: #57606a;
+  font-size: 1.2rem;
+  color: #007bff; /* Primary color for icons */
   display: flex;
   align-items: center;
   justify-content: center;
-  min-width: 20px;
+  width: 40px;
+  height: 40px;
+  background: #f0f7ff;
+  border-radius: 10px;
+  transition: all 0.3s;
+}
+
+.setting_item:hover .setting_icon {
+  background: #007bff;
+  color: white;
 }
 
 /* Title */
@@ -56,58 +79,85 @@
 
 /* ===== RIGHT CARD: Profile Image + Active Pill Card ===== */
 .photo_card {
-  width: 300px;
-  margin: 28px;
-  padding: 22px 16px;
-  border-radius: 10px;
-  border: 1.7px solid #d0d7de;
-  background: #ffffff;
-  box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+  flex: 1;
+  margin: 0;
+  padding: 40px 20px;
+  border-radius: 20px;
+  border: 1px solid rgba(255, 255, 255, 0.6);
+  background: white;
+  box-shadow: 0 10px 40px rgba(0,0,0,0.08);
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
-  /* height: 70vh; */
+  justify-content: flex-start;
+  min-height: 400px;
+  transition: transform 0.3s ease;
+}
+
+.photo_card:hover {
+    transform: translateY(-5px);
 }
 
 /* Profile image */
 .photo_card img {
-  width: 120px;
-  height: 120px;
+  width: 150px;
+  height: 150px;
   border-radius: 50%;
   object-fit: cover;
-  border: 2px solid #0969da;
-  padding: 3px;
+  border: 4px solid white;
+  padding: 0;
   background: #fff;
-  margin-bottom: 10px;
+  margin-bottom: 24px;
+  box-shadow: 0 8px 20px rgba(0,0,0,0.15);
+  transition: transform 0.4s ease;
+}
+
+.photo_card:hover img {
+    transform: scale(1.1) rotate(5deg);
 }
 
 /* Profile name */
 .photo_card .profile-name {
-  font-size: 17px;
-  font-weight: 600;
-  color: #111;
+  font-size: 1.3rem;
+  font-weight: 700;
+  color: #333;
   text-align: center;
-  margin-bottom: 12px;
+  margin-bottom: 16px;
 }
 
 /* ===== GitHub Active Status Pill ===== */
 .github-active-pill {
   display: inline-flex;
   align-items: center;
-  gap: 7px;
-  padding: 4px 12px;
-  border: 1.6px solid #d0d7de;
-  border-radius: 20px;
-  background: #f6f8fa;
-  color: #24292f;
-  margin-top: 6px;
-  min-width: 125px;
+  gap: 10px;
+  padding: 8px 20px;
+  border: 1px solid #e1e4e8;
+  border-radius: 30px;
+  background: #f6f8fa; /* Keep subtle or make vibrant */
+  color: #333;
+  margin-top: 12px;
+  min-width: 140px;
   justify-content: center;
+  font-weight: 500;
+  font-size: 0.9rem;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.05);
 }
 
 /* Active green dot */
-.github-active-pill .status-dot,
+.github-active-pill .status-dot {
+    width: 10px;
+    height: 10px;
+    background-color: #2da44e;
+    border-radius: 50%;
+    box-shadow: 0 0 0 2px #d2fedb; 
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+    0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(45, 164, 78, 0.7); }
+    70% { transform: scale(1); box-shadow: 0 0 0 6px rgba(45, 164, 78, 0); }
+    100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(45, 164, 78, 0); }
+}
 .status-dot {
   width: 8px;
   height: 8px;

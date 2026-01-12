@@ -21,7 +21,7 @@ const Otp = () => {
     }
 
     try {
-      const response = await fetch("http://localhost:5001/auth/verify_otp", {
+      const response = await fetch("/auth/verify_otp", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

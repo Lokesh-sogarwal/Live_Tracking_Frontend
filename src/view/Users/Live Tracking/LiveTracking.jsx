@@ -1,50 +1,39 @@
 import React, { useEffect, useState, useRef } from "react";
-import { Map, Marker } from "pigeon-maps";
 import { useNavigate } from "react-router-dom";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+// import busImg from "../../../Assets/bus.png"; // Removing specific image to rely on cleaner CSS
 
 import "./LiveTracking.css";
 
 const LiveTracking = () => {
   const navigate = useNavigate();
+  const startInputRef = useRef(null);
+  const destInputRef = useRef(null);
   const containerRef = useRef(null);
 
-  const [position, setPosition] = useState([20.5937, 78.9629]); // India center
   const [startingPoint, setStartingPoint] = useState("");
   const [destination, setDestination] = useState("");
-  const [startCoords, setStartCoords] = useState(null);
-  const [destCoords, setDestCoords] = useState(null);
+  
   const [startSuggestions, setStartSuggestions] = useState([]);
   const [destSuggestions, setDestSuggestions] = useState([]);
   const [startLoading, setStartLoading] = useState(false);
   const [destLoading, setDestLoading] = useState(false);
 
-  // Fetch current location
+  // Fetch current location on mount
   useEffect(() => {
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
         async (pos) => {
-          let { latitude, longitude } = pos.coords;
-          // constrain to India bounds
-          if (latitude < 6.5546) latitude = 6.5546;
-          if (latitude > 35.6745) latitude = 35.6745;
-          if (longitude < 68.1114) longitude = 68.1114;
-          if (longitude > 97.3956) longitude = 97.3956;
-
-          const coords = [latitude, longitude];
-          setPosition(coords);
-          setStartCoords(coords);
-
+          const { latitude, longitude } = pos.coords;
           try {
             const res = await fetch(
               `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&countrycodes=IN&accept-language=en`
             );
             const data = await res.json();
-            setStartingPoint(data.display_name || "Current Location");
+             setStartingPoint(data.display_name || "Current Location");
           } catch (err) {
             console.error("Reverse geocoding failed", err);
-            setStartingPoint("Current Location");
           }
         },
         (err) => console.error("Geolocation failed", err)
@@ -52,9 +41,11 @@ const LiveTracking = () => {
     }
   }, []);
 
-  // Fetch suggestions
   const fetchSuggestions = async (query, setter, setLoading) => {
-    if (!query) return setter([]);
+    if (!query) {
+      setter([]);
+      return;
+    }
     setLoading(true);
     try {
       const res = await fetch(
@@ -72,28 +63,10 @@ const LiveTracking = () => {
     }
   };
 
-  // Select suggestion
-  const handleSelectSuggestion = (suggestion, setterCoords, setterInput, clearSuggestions) => {
-    const coords = [parseFloat(suggestion.lat), parseFloat(suggestion.lon)];
-    setterCoords(coords);
+  const handleSelectSuggestion = (suggestion, setterInput, clearSuggestions) => {
     setterInput(suggestion.display_name);
-    setPosition(coords);
     clearSuggestions([]);
   };
-
-  // Hide suggestions on outside click
-  useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (containerRef.current && !containerRef.current.contains(event.target)) {
-        setStartSuggestions([]);
-        setDestSuggestions([]);
-      }
-    };
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-    };
-  }, []);
 
   const handleGetRoute = async () => {
     if (!startingPoint || !destination) {
@@ -110,91 +83,112 @@ const LiveTracking = () => {
         body: JSON.stringify({ starting_point: startingPoint, destination }),
       });
       const data = await res.json();
-      if (res.ok) navigate("/all_routes", { state: { routeData: data } });
-      else toast.error(data.message || data.error);
+      if (res.ok) {
+        navigate("/all_routes", { state: { routeData: data } });
+      } else {
+        toast.error(data.message || data.error);
+      }
     } catch (err) {
       console.error("Server error", err);
       toast.error("Server error while fetching route");
     }
   };
 
+  // Handle click outside to close suggestions
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (startInputRef.current && !startInputRef.current.contains(event.target)) {
+        setStartSuggestions([]);
+      }
+      if (destInputRef.current && !destInputRef.current.contains(event.target)) {
+        setDestSuggestions([]);
+      }
+    };
+    
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, []);
+
   return (
     <div className="livetracking-container" ref={containerRef}>
-      <div className="map">
-        <Map height={650} center={position} defaultZoom={12}>
-          {startCoords && <Marker anchor={startCoords} color="green" />}
-          {destCoords && <Marker anchor={destCoords} color="red" />}
-        </Map>
-      </div>
+      {/* Animated Background Elements */}
+      <div className="bg-shape shape-1"></div>
+      <div className="bg-shape shape-2"></div>
+      <div className="bg-shape shape-3"></div>
 
-      <div className="route_details">
-        <label>Starting Point</label>
-        <div className="input-wrapper">
-          <input
-            value={startingPoint}
-            onChange={(e) => {
-              setStartingPoint(e.target.value);
-              fetchSuggestions(e.target.value, setStartSuggestions, setStartLoading);
-            }}
-            placeholder="Enter starting point"
-          />
-          {startLoading && <p className="loading-text">Loading...</p>}
-          {startSuggestions.length > 0 && (
-            <ul className="suggestions">
-              {startSuggestions.map((s, idx) => (
-                <li
-                  key={idx}
-                  onClick={() =>
-                    handleSelectSuggestion(
-                      s,
-                      setStartCoords,
-                      setStartingPoint,
-                      setStartSuggestions
-                    )
-                  }
-                >
-                  {s.display_name}
-                </li>
-              ))}
-            </ul>
-          )}
+      <div className="search-card">
+        <div className="card-header">
+           <h1>Start Your Journey</h1>
+           <p>Track buses in real-time with RouteMaster</p>
+        </div>
+        
+        <div className="inputs-container">
+            <div className="input-group">
+            <label>From</label>
+            <div className="input-wrapper" ref={startInputRef}>
+                <div className="icon-marker start-marker"></div>
+                <input
+                value={startingPoint}
+                onChange={(e) => {
+                    setStartingPoint(e.target.value);
+                    fetchSuggestions(e.target.value, setStartSuggestions, setStartLoading);
+                }}
+                placeholder="Current Location"
+                />
+                {startLoading && <span className="input-loader"></span>}
+                {startSuggestions.length > 0 && (
+                <ul className="suggestions-list">
+                    {startSuggestions.map((s, idx) => (
+                    <li
+                        key={s.place_id || idx}
+                        onClick={() => handleSelectSuggestion(s, setStartingPoint, setStartSuggestions)}
+                    >
+                        {s.display_name}
+                    </li>
+                    ))}
+                </ul>
+                )}
+            </div>
+            </div>
+
+            <div className="connector-line"></div>
+
+            <div className="input-group">
+            <label>To</label>
+            <div className="input-wrapper" ref={destInputRef}>
+                <div className="icon-marker dest-marker"></div>
+                <input
+                value={destination}
+                onChange={(e) => {
+                    setDestination(e.target.value);
+                    fetchSuggestions(e.target.value, setDestSuggestions, setDestLoading);
+                }}
+                placeholder="Search Destination"
+                />
+                {destLoading && <span className="input-loader"></span>}
+                {destSuggestions.length > 0 && (
+                <ul className="suggestions-list">
+                    {destSuggestions.map((s, idx) => (
+                    <li
+                        key={s.place_id || idx}
+                        onClick={() => handleSelectSuggestion(s, setDestination, setDestSuggestions)}
+                    >
+                        {s.display_name}
+                    </li>
+                    ))}
+                </ul>
+                )}
+            </div>
+            </div>
         </div>
 
-        <label>Destination</label>
-        <div className="input-wrapper">
-          <input
-            value={destination}
-            onChange={(e) => {
-              setDestination(e.target.value);
-              fetchSuggestions(e.target.value, setDestSuggestions, setDestLoading);
-            }}
-            placeholder="Enter destination"
-          />
-          {destLoading && <p className="loading-text">Loading...</p>}
-          {destSuggestions.length > 0 && (
-            <ul className="suggestions">
-              {destSuggestions.map((s, idx) => (
-                <li
-                  key={idx}
-                  onClick={() =>
-                    handleSelectSuggestion(
-                      s,
-                      setDestCoords,
-                      setDestination,
-                      setDestSuggestions
-                    )
-                  }
-                >
-                  {s.display_name}
-                </li>
-              ))}
-            </ul>
-          )}
-        </div>
-
-        <button onClick={handleGetRoute}>Get Route</button>
+        <button className="search-btn-large" onClick={handleGetRoute}>
+          Find Bus Routes
+        </button>
       </div>
-      <ToastContainer />
+      <ToastContainer position="top-center" theme="colored" />
     </div>
   );
 };
