@@ -11,9 +11,11 @@ const Layout = ({ children }) => {
         <div className="side-bar-container">
           <Sidebar />
         </div>
-        <div className="flex-grow-1 p-3 col-8 content-box">
+        <div className="flex-grow-1 content-box">
           <Nav />
-          {children}
+          <div className="p-3">
+             {children}
+          </div>
         </div>
       </div>
       <ToastContainer />

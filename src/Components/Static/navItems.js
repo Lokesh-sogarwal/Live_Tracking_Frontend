@@ -13,29 +13,30 @@ const navItems = [
     icon: <CgProfile />,
     path: "/profile",
   },
+   {
+    id: 5,
+    title: "Create Route",
+    icon: <TbRouteSquare />,
+    path: "/create_routes"
+  },
+  {
+    id: 12,
+    title: "Register Bus",
+    icon: <BsDatabaseAdd />,
+    path: "/register_bus"
+  },
+ 
   {
     id: 3,
     title: "Notification",
     icon: <IoIosNotifications />,
-    link: "/notification"
+    path: "/notifications"
   },
   {
     id: 2,
     title: "Settings",
     icon: <IoIosSettings />,
     path: "/profile_settings",
-  },
-  {
-    id: 5,
-    title: "Create Route",
-    icon: <TbRouteSquare />,
-    link: "/Create_routes"
-  },
-  {
-    id: 12,
-    title: "Register Bus",
-    icon: <BsDatabaseAdd />,
-    link: "/Bus_register"
   },
  
   {

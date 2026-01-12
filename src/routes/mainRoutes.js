@@ -21,6 +21,8 @@ import ChatBot from '../view/Users/Chatbot/chatbot';
 import Chat from '../view/Chatbox/chat';
 import Settings from '../view/Users/Settings/setting';
 import EditProfile from '../view/Users/Settings/editProfile';
+import RegisterBus from '../view/Users/Bus/RegisterBus';
+import Notification from '../view/Users/Notification/Notification';
 
 
 
@@ -84,7 +86,7 @@ export const userRoutes = [
   },
   {
     id: 17,
-    path: "Create_routes",
+    path: "create_routes",
     element: <BusRoute />
   },{
     id: 18,
@@ -140,6 +142,16 @@ export const userRoutes = [
     id: 28,
     path:"edit_profile",
     element:<EditProfile/>
+  },
+  {
+    id: 29,
+    path:"register_bus",
+    element:<RegisterBus/>
+  },
+  {
+    id: 30,
+    path:"notifications",
+    element:<Notification/>
   }
 ];
 

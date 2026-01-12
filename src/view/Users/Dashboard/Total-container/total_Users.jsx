@@ -12,7 +12,7 @@ const Total_Users = () => {
   useEffect(() => {
     async function fetchData() {
       try {
-        const res = await fetch("http://localhost:5001/data/get_data", {
+        const res = await fetch("/data/get_data", {
           method: "GET",
           headers: {
             "Content-Type": "application/json",

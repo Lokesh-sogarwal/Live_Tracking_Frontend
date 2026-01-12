@@ -1,144 +1,123 @@
-/* Container for map + details */
 .bus-tracking-container {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 20px;
-  margin: 20px;
-  justify-content: center;
-  align-items: flex-start;
-  font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+  display: grid;
+  grid-template-columns: 1fr 350px;
+  gap: 24px;
+  height: 85vh;
+  margin: 0;
+  padding: 0 4px; /* Align with dashboard padding */
+  font-family: 'Poppins', sans-serif;
+  animation: fadeIn 0.8s ease-out;
+  overflow: hidden;
+  position: relative;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
 /* Map styling */
 .leaflet-container {
-  flex: 1;
-  min-width: 350px;
-  height: 500px;
-  background: #f9f9f9;
-  border-radius: 12px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-  position: relative;
+  height: 100%;
+  width: 100%;
+  border-radius: 20px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+  border: 1px solid rgba(0, 0, 0, 0.05);
+  z-index: 1;
 }
 
 /* Details section */
 .details-section {
-  flex: 0.35;
-  min-width: 300px;
-  background: #fff;
-  border-radius: 12px;
-  padding: 20px 25px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-radius: 20px;
+  padding: 24px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.4);
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 16px;
+  height: fit-content;
+  overflow-y: auto;
+  max-height: 100%;
 }
 
 /* Heading inside details */
 .details-section h2 {
-  margin-bottom: 15px;
-  color: #007bff;
-  font-size: 20px;
-  font-weight: 600;
-  border-bottom: 2px solid #f0f0f0;
-  padding-bottom: 8px;
+  margin-bottom: 8px;
+  color: #1e293b;
+  font-size: 1.25rem;
+  font-weight: 700;
+  border-bottom: 2px solid #e2e8f0;
+  padding-bottom: 12px;
 }
 
 /* Driver image */
 .details-section .img-div {
   display: flex;
   justify-content: center;
-  margin-bottom: 10px;
+  margin-bottom: 8px;
 }
 
 .details-section .img-div img {
-  width: 80px;
-  height: 80px;
+  width: 90px;
+  height: 90px;
   border-radius: 50%;
   object-fit: cover;
-  border: 2px solid #007bff;
+  border: 4px solid #fff;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
 
 /* Each detail row */
 .details-section p {
-  margin: 6px 0;
-  font-size: 15px;
-  color: #333;
-  line-height: 1.5;
+  margin: 4px 0;
+  font-size: 0.95rem;
+  color: #475569;
+  line-height: 1.6;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-bottom: 8px;
+  border-bottom: 1px dashed #e2e8f0;
+}
+
+.details-section p:last-child {
+  border-bottom: none;
 }
 
 .details-section p b {
-  color: #007bff;
+  color: #1e293b;
+  font-weight: 600;
 }
 
 /* Error messages */
 .details-section .error {
-  color: red;
-  font-weight: 500;
-  margin-top: 10px;
-}
-
-/* Leaflet popup styling */
-.leaflet-popup-content-wrapper {
-  font-size: 14px;
-  font-weight: 500;
-  color: #333;
+  background: #fef2f2;
+  color: #ef4444;
+  padding: 12px;
   border-radius: 8px;
-}
-
-/* Polyline styling */
-.leaflet-interactive {
-  stroke-width: 4 !important;
-  stroke-opacity: 0.8 !important;
-}
-
-/* Current location label */
-.current-location-label {
-  position: absolute;
-  top: 10px;
-  left: 50%;
-  transform: translateX(-50%);
-  background: rgba(0, 123, 255, 0.85);
-  color: #fff;
-  padding: 8px 15px;
-  border-radius: 8px;
-  font-weight: 600;
-  font-size: 14px;
-  z-index: 1000;
-  pointer-events: none;
+  font-weight: 500;
   text-align: center;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+  border: 1px solid #fee2e2;
 }
 
-/* Responsive adjustments */
+/* Responsive */
 @media (max-width: 1024px) {
   .bus-tracking-container {
-    flex-direction: column;
-    align-items: center;
+    grid-template-columns: 1fr;
+    height: auto;
   }
-  .leaflet-container,
+
+  .leaflet-container {
+    height: 400px;
+    order: 2;
+  }
+
   .details-section {
-    width: 90%;
+    order: 1;
+    width: 100%;
+    max-width: 600px;
+    margin: 0 auto;
   }
 }
-
-@media (max-width: 480px) {
-  .details-section h2 {
-    font-size: 18px;
-  }
-  .details-section p {
-    font-size: 14px;
-  }
-  .current-location-label {
-    font-size: 13px;
-    padding: 6px 12px;
-  }
-  .details-section .img-div img {
-    width: 60px;
-    height: 60px;
-  }
-}
-
-.leaflet-marker-icon.bus-icon {
-  transform: rotate(180deg);
-}
-

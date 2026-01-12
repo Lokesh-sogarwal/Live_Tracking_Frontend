@@ -10,7 +10,7 @@ const AllSchedules = ({ selectedDate }) => {
     setLoading(true);
     const token = localStorage.getItem("token");
 
-    fetch("http://localhost:5001/bus/schedules", {
+    fetch("/bus/schedules", {
       method: "GET",
       headers: {
         "Content-Type": "application/json",
@@ -36,12 +36,15 @@ const AllSchedules = ({ selectedDate }) => {
 
   // Filter schedules based on selected date OR current date
   const todayStr = new Date().toDateString();
-  const filteredSchedules = schedules.filter(
-    (sch) =>
-      sch.date &&
-      (new Date(sch.date).toDateString() === selectedDate.toDateString() ||
-       new Date(sch.date).toDateString() === todayStr)
-  );
+  const filteredSchedules = schedules.filter((sch) => {
+    if (!sch.date) return false;
+    
+    // Safety check for selectedDate
+    const selectedDateStr = selectedDate ? new Date(selectedDate).toDateString() : todayStr;
+    const scheduleDateStr = new Date(sch.date).toDateString();
+    
+    return scheduleDateStr === selectedDateStr || scheduleDateStr === todayStr;
+  });
 
   return (
     <div className="schedule-card">

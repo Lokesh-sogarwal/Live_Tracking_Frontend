@@ -37,7 +37,7 @@ export const Items = [
         id: 7,
         title: "Live Tracking",
         icon: <FaMapMarkedAlt />,
-        link: "live_tracking"
+        link: "/live_tracking"
     },
 
     {

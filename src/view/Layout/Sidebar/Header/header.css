@@ -1,19 +1,51 @@
-/* header.css */
-
-/* Container for logo and text */
+/* Header Container */
 .header-logo {
   display: flex;
   align-items: center;
-  justify-content: center;
-  gap: 8px;               
-  margin: 15px;
-  padding: 20px 0;
-  border-bottom: 1px solid  rgba(0, 0, 0, 0.652); /* subtle bottom border */
+  gap: 12px;
+  padding: 24px 20px;
+  justify-content: flex-start; /* Align left */
 }
 
-/* Text beside the logo */
-.header-logo span {
-  font-size: 20px;        /* text size */
-  font-weight: bold;      /* bold text */
-  color: #333;            /* text color */
+/* Logo icon styling */
+.logo-icon {
+  font-size: 28px;
+  color: #fff;
+  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+  width: 45px;
+  height: 45px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 10px rgba(37, 99, 235, 0.3);
+  transform: rotate(-5deg);
+  transition: transform 0.3s ease;
+}
+
+.header-logo:hover .logo-icon {
+  transform: rotate(0deg) scale(1.05);
+}
+
+/* Text styling */
+.logo-text {
+  display: flex;
+  flex-direction: column;
+  line-height: 1;
+}
+
+.logo-text span:first-child {
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: #1e293b; /* Slate-800 */
+  letter-spacing: -0.5px;
+}
+
+.logo-text .highlight {
+  font-size: 1.2rem;
+  font-weight: 700;
+  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  letter-spacing: -0.5px;
 }

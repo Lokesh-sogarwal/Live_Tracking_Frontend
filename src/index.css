@@ -15,3 +15,36 @@ code {
   margin: 0;
   padding: 0;
 }
+
+/* Google Fonts Import */
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap');
+
+body {
+  font-family: 'Poppins', sans-serif !important;
+  background-color: #f0f2f5; /* Light greyish-blue background for modern feel */
+  color: #333;
+}
+
+/* Scrollbar Styling */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f1f1;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #a8a8a8;
+}
+
+/* Global button styles for consistency */
+button {
+  font-family: 'Poppins', sans-serif;
+  cursor: pointer;
+}

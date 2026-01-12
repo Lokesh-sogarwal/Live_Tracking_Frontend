@@ -1,53 +1,155 @@
 /* Sidebar container */
 .sidebar {
-  background-color: #ffffff; /* clean white */
-  color: #000; /* default text color black */
-  width: 250px;
-  min-height: 100vh;
-  box-shadow: 2px 0 6px rgba(0, 0, 0, 0.1);
-  position: fixed;
-  top: 0;
-  left: 0;
+  background: linear-gradient(180deg, #ffffff 0%, #f8f9fa 100%);
+  width: 100%;
+  height: 100%;
+  box-shadow: 4px 0 20px rgba(0, 0, 0, 0.05);
   overflow-y: auto;
   transition: all 0.3s ease;
-  z-index: 1000;
-}
-
-/* Flex wrapper for icons + text */
-.cont {
-  justify-content: center;
+  border-right: 1px solid rgba(0, 0, 0, 0.05);
   display: flex;
-  align-items: center;
-  gap: 15px;
-  padding: 10px 0;
-  line-height: 1.5;
-  color: #000; /* ensures black text */
-  
+  flex-direction: column;
 }
 
-/* Sidebar list items */
+/* Custom Scrollbar */
+.sidebar::-webkit-scrollbar {
+  width: 5px;
+}
+.sidebar::-webkit-scrollbar-track {
+  background: transparent;
+}
+.sidebar::-webkit-scrollbar-thumb {
+  background: #dbdbdb;
+  border-radius: 10px;
+}
+.sidebar::-webkit-scrollbar-thumb:hover {
+  background: #c1c1c1;
+}
+
+/* Header Container */
+.sidebar .header {
+  padding: 0;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+  background: white;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+/* List Container */
+.sidebar-list {
+  padding: 20px 15px;
+  margin: 0;
+  list-style: none;
+  flex: 1;
+}
+
+/* Sidebar Item Wrapper */
 .sidebar-item {
-  padding: 0   20px;
+  margin-bottom: 8px;
+  display: block;
+  text-decoration: none;
+  perspective: 1000px; /* For 3D effects if needed */
+}
+
+/* Item Content (The visible button) */
+.cont {
+  position: relative;
   display: flex;
-  align-items: flex-start;
+  align-items: center;
+  gap: 16px;
+  padding: 14px 20px;
+  color: #64748b; /* Slate-500 */
+  border-radius: 12px;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  cursor: pointer;
+  background: transparent;
+  overflow: hidden;
+  font-family: 'Poppins', sans-serif; /* Assuming you want a modern font */
 }
 
-/* Hover effect */
-.sidebar-item:hover {
-  background-color: #f1f1f1;
-  color: #000;
-}
-
-/* Icon */
+/* Icon Styling */
 .cont span:first-child {
-  font-size: 1.3rem;
+  font-size: 1.4rem;
   display: flex;
   align-items: center;
   justify-content: center;
+  min-width: 24px;
+  transition: transform 0.3s ease;
+  color: #94a3b8; /* Slate-400 */
 }
 
-/* Text */
+/* Text Styling */
 .cont span:last-child {
-  font-size: 1.1rem;
-  /* font-weight: 500; */
+  font-size: 0.95rem;
+  font-weight: 500;
+  white-space: nowrap;
+  letter-spacing: 0.3px;
 }
+
+/* Hover Effect */
+.cont:hover {
+  background-color: #f1f5f9;
+  color: #334155;
+  transform: translateX(4px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
+}
+
+.cont:hover span:first-child {
+  color: #3b82f6; /* Blue-500 */
+  transform: scale(1.1);
+}
+
+/* Active State */
+.cont.active {
+  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+  color: #ffffff;
+  box-shadow: 0 8px 20px rgba(37, 99, 235, 0.3);
+  transform: translateX(4px);
+}
+
+.cont.active span:first-child {
+  color: #ffffff;
+}
+
+/* Active Indicator Line (Optional decorative element) */
+.cont.active::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  height: 60%;
+  width: 3px;
+  background: rgba(255, 255, 255, 0.5);
+  border-radius: 0 4px 4px 0;
+  display: none; /* Hidden for now, cleaner look without */
+}
+
+/* Danger Item (Logout or similar) */
+.sidebar-item.text-danger .cont:hover {
+  background-color: #fef2f2;
+  color: #ef4444;
+}
+.sidebar-item.text-danger .cont:hover span:first-child {
+  color: #ef4444;
+}
+
+/* Entrance Animation */
+@keyframes slideInFade {
+  from {
+    opacity: 0;
+    transform: translateX(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.sidebar-item {
+  animation: slideInFade 0.4s ease-out forwards;
+  opacity: 0; /* consistent start state */
+}
+
+/* Staggered Delay Generator handled in JSX via style */

@@ -2,72 +2,49 @@ import React, { useEffect, useState } from 'react';
 import CountUp from 'react-countup';
 import './total.css';
 import { useNavigate } from 'react-router-dom';
-import { FaBlog } from "react-icons/fa";
+import { FaRoute } from "react-icons/fa";
 
-const Total_Blogs = () => {
-  const [totalBlogs, settotalBlogs] = useState(0);
-  const [published, setpublished] = useState(0);
-  const navigate = useNavigate();
+const Total_routes = () => {
+    const [totalRoutes, setTotalRoutes] = useState(0);
+    const navigate = useNavigate();
 
-  useEffect(() => {
-    async function fetchData() {
-      try {
-        const res = await fetch("http://localhost:5001/data/total_routes", {
-          method: "GET",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: "Bearer " + localStorage.getItem("token"),
-          },
-          credentials: "include",
-        });
+    useEffect(() => {
+        const fetchRoutes = async () => {
+            try {
+                const res = await fetch("/bus/get_all_routes");
+                if (res.ok) {
+                    const data = await res.json();
+                    setTotalRoutes(data.length); 
+                }
+            } catch (err) {
+                console.error(err);
+            }
+        };
+        fetchRoutes();
+    }, []);
 
-        if (!res.ok) {
-          const error = await res.json();
-        
-          return;
-        }
+    return (
+        <div className="total-card">
+            <div className="total-card-header" onClick={() => navigate('/all_routes')}>
+                <div><FaRoute /> Routes</div>
+                <div>{'>'}</div>
+            </div>
 
-        const rawData = await res.json();
-       
+            <div className="total-card-count">
+                <CountUp end={totalRoutes} duration={2} />
+            </div>
+            <div className="total-card-subtitle">Total Routes</div>
 
-        // Example: rawData = [users, totalCount, publishedCount, notpublishedCount]
-        settotalBlogs(rawData.total_routes || 0);
-        setpublished(rawData.route_completed || 0);
-      } catch (error) {
-      }
-    }
-
-    fetchData();
-  }, []);
-
-  return (
-    <div className="total-card">
-      {/* Header */}
-      <div className="total-card-header" onClick={() => navigate('/blogs')}>
-        <div><FaBlog /> Schedule</div>
-        <div>{'>'}</div>
-      </div>
-
-      {/* Count */}
-      <div className="total-card-count">
-        <CountUp end={totalBlogs} duration={2.5} />
-      </div>
-      <div className="total-card-subtitle">Total Routes</div>
-
-      {/* Footer */}
-      <div className="total-card-footer">
-        <div style={{ cursor: 'pointer' }}>
-          <strong>{published}</strong>
-            Completed
+            <div className="total-card-footer">
+                <div>
+                   <strong>{2}</strong> Completed
+                </div>
+                <div>
+                  <strong>{18}</strong> In-Progress
+                </div>
+            </div>
         </div>
-        <div style={{ cursor: 'pointer' }}>
-          <strong>{totalBlogs-published}</strong>
-          In-Complete
-        </div>
-      </div>
-    </div>
-  );
+    );
 };
 
-export default Total_Blogs;
-
+export default Total_routes;

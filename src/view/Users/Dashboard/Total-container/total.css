@@ -1,65 +1,110 @@
+/* Total Card Styling to Match Dashboard Theme */
+
 .total-card {
-  background: #fff;
-  border-radius: 12px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-  padding: 16px;
+  background: transparent;
+  box-shadow: none;
+  padding: 0;
   width: 100%;
-  text-align: center;
-  transition: transform 0.3s ease;
+  text-align: left;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  height: 100%;
 }
 
-/* Top Row (Title + Arrow) */
+/* Link/Header Row */
 .total-card-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  font-family: 'Poppins', sans-serif;
   font-size: 1rem;
   font-weight: 600;
-  color: #4B6EC0;
-  margin-bottom: 12px;
+  color: #64748b; /* Muted Slate */
+  margin-bottom: 8px;
   cursor: pointer;
+  transition: color 0.2s ease;
 }
 
+.total-card-header:hover {
+  color: #3b82f6; /* Blue hover */
+}
+
+/* Icon & Label Group */
+.total-card-header div:first-child {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+/* Icon Bubble */
 .total-card-header svg {
-  margin-right: 6px;
-  color: #4B6EC0;
+  margin: 0;
+  color: #3b82f6; /* Blue Icon */
+  font-size: 1rem;
+  width: 36px;
+  height: 36px;
+  background: rgba(59, 130, 246, 0.1); /* Light Blue Bg */
+  padding: 8px;
+  border-radius: 12px; /* Soft Square */
+  transition: transform 0.2s;
 }
 
-/* Main Count */
+.total-wrapper:hover .total-card-header svg {
+  transform: scale(1.1) rotate(5deg);
+  background: #3b82f6;
+  color: white;
+}
+
+/* Arrow Icon */
+.total-card-header div:last-child {
+  font-size: 1rem;
+  opacity: 0.5;
+  transition: transform 0.2s;
+}
+
+.total-wrapper:hover .total-card-header div:last-child {
+  transform: translateX(3px);
+  opacity: 1;
+}
+
+/* Big Number Count */
 .total-card-count {
   font-size: 2.5rem;
-  font-weight: bold;
-  color: #f39c12; /* Orange like screenshot */
-  margin: 12px 0 6px 0;
+  font-weight: 800;
+  color: #1e293b; /* Dark Slate */
+  margin: 8px 0;
+  letter-spacing: -1px;
+  line-height: 1;
 }
 
-/* Subtitle */
-.total-card-subtitle {
-  font-size: 0.9rem;
-  color: #777;
-  margin-bottom: 12px;
-}
-
-/* Footer (Confirmed / Not Confirmed) */
+/* Subtitle / Footer Info */
 .total-card-footer {
   display: flex;
-  border-top: 1px solid #eee;
-  margin-top: 12px;
+  margin-top: auto;
+  padding-top: 16px;
+  border-top: 1px solid #f1f5f9;
+  gap: 20px;
 }
 
 .total-card-footer div {
-  flex: 1;
-  padding: 10px;
+  font-size: 0.8rem;
+  color: #94a3b8; /* Light Gray Text */
+  display: flex;
+  flex-direction: column;
+  line-height: 1.4;
+}
+
+.total-card-footer div strong {
+  font-size: 1rem;
+  color: #475569; /* Darker Slate */
+  font-weight: 700;
+}
+
+/* Subtitle (text below big number) */
+.total-card-subtitle {
   font-size: 0.9rem;
-  color: #333;
-}
-
-.total-card-footer div:first-child {
-  border-right: 1px solid #eee;
-}
-
-.total-card-footer strong {
-  display: block;
-  font-size: 1.1rem;
-  color: #4B6EC0;
+  color: #94a3b8; /* Slate-400 */
+  font-weight: 500;
+  margin-bottom: auto; /* Push footer down */
 }
