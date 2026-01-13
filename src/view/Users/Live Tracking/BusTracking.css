@@ -102,6 +102,133 @@
   border: 1px solid #fee2e2;
 }
 
+/* Full-page loading state */
+.bus-tracking-loading {
+  height: 80vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  color: #1e293b;
+  font-family: 'Poppins', sans-serif;
+}
+
+.bus-tracking-loading .spinner {
+  width: 40px;
+  height: 40px;
+  border-radius: 999px;
+  border: 4px solid #e2e8f0;
+  border-top-color: #0ea5e9;
+  animation: spin 0.9s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* Bus not started overlay */
+.bus-not-started-overlay {
+  position: absolute;
+  top: 16px;
+  left: 16px;
+  z-index: 10;
+  pointer-events: none;
+}
+
+.bus-not-started-card {
+  background: rgba(15, 23, 42, 0.9);
+  color: #e2e8f0;
+  padding: 16px 20px;
+  border-radius: 16px;
+  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.45);
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  max-width: 360px;
+}
+
+.bus-not-started-text h3 {
+  margin: 0 0 4px;
+  font-size: 0.95rem;
+  font-weight: 600;
+}
+
+.bus-not-started-text p {
+  margin: 0;
+  font-size: 0.8rem;
+  color: #cbd5f5;
+}
+
+.bus-not-started-animation {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+
+.bus-road-line {
+  width: 110px;
+  height: 2px;
+  background: linear-gradient(90deg, #38bdf8, #22c55e);
+  border-radius: 999px;
+}
+
+.bus-road-line .dot {
+  position: absolute;
+  top: -3px;
+  width: 6px;
+  height: 6px;
+  border-radius: 999px;
+  background: #e0f2fe;
+  animation: roadDots 1.8s linear infinite;
+}
+
+.bus-not-started-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  z-index: 10;
+  pointer-events: none;
+}
+
+.bus-road-line .dot:nth-child(2) {
+  animation-delay: 0.3s;
+}
+
+.bus-road-line .dot:nth-child(3) {
+  animation-delay: 0.6s;
+}
+
+@keyframes roadDots {
+  from { transform: translateX(-10px); opacity: 0; }
+  15% { opacity: 1; }
+  to { transform: translateX(120px); opacity: 0; }
+}
+
+.bus-not-started-bus {
+  width: 38px;
+  filter: drop-shadow(0 4px 10px rgba(0, 0, 0, 0.35));
+  animation: busFloat 2s ease-in-out infinite;
+}
+
+@keyframes busFloat {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-4px); }
+}
+
+/* Map waiting container when backend status is 'yet to start' */
+.map-waiting-container {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+}
+
 /* Responsive */
 @media (max-width: 1024px) {
   .bus-tracking-container {

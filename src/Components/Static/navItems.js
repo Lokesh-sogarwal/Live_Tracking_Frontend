@@ -25,13 +25,6 @@ const navItems = [
     icon: <BsDatabaseAdd />,
     path: "/register_bus"
   },
- 
-  {
-    id: 3,
-    title: "Notification",
-    icon: <IoIosNotifications />,
-    path: "/notifications"
-  },
   {
     id: 2,
     title: "Settings",

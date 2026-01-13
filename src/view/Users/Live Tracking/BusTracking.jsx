@@ -16,6 +16,34 @@ import "leaflet/dist/leaflet.css";
 import "./BusTracking.css";
 import API_BASE_URL from "../../../utils/config";
 
+// Helper: build a Date from schedule.date and a time string
+const buildScheduleDateTime = (schedule, timeStr) => {
+  if (!schedule || (!schedule.date && !timeStr)) return null;
+
+  const timeVal = String(timeStr || "");
+
+  // If backend already sent full datetime in timeStr, use it directly
+  if (/\d{4}-\d{2}-\d{2}/.test(timeVal)) {
+    const d = new Date(timeVal);
+    return isNaN(d.getTime()) ? null : d;
+  }
+
+  if (schedule.date && timeStr) {
+    let d = new Date(`${schedule.date}T${timeVal}`);
+    if (!isNaN(d.getTime())) return d;
+
+    d = new Date(`${schedule.date} ${timeVal}`);
+    if (!isNaN(d.getTime())) return d;
+  }
+
+  if (schedule.date) {
+    const d = new Date(schedule.date);
+    return isNaN(d.getTime()) ? null : d;
+  }
+
+  return null;
+};
+
 // Fit map to route bounds
 const FitBounds = ({ coords }) => {
   const map = useMap();
@@ -34,10 +62,10 @@ const BusTracking = () => {
   const [loading, setLoading] = useState(true);
   const [routeCoords, setRouteCoords] = useState([]);
   const [estimatedMinutes, setEstimatedMinutes] = useState(null);
-  const [arrivalTime, setArrivalTime] = useState(null);
   const [error, setError] = useState(null);
+  const [locationStatus, setLocationStatus] = useState(null); // 'not-started' | 'no-tracking' | null
 
-  const token = localStorage.getItem("token"); // get token from storage
+  const token = localStorage.getItem("token");
 
   const busIcon = L.icon({
     iconUrl: busImg,
@@ -50,9 +78,30 @@ const BusTracking = () => {
   const endLat = Number(route?.end_lat);
   const endLng = Number(route?.end_lng);
 
-  // Track loading states separately
+  const backendStatus = (schedule?.status || "").toLowerCase();
+  const isBackendYetToStart =
+    backendStatus === "yet_to_start" ||
+    backendStatus === "yet to start" ||
+    backendStatus === "yet-start" ||
+    backendStatus === "yet start";
+
   const [routeLoaded, setRouteLoaded] = useState(false);
   const [locationLoaded, setLocationLoaded] = useState(false);
+
+  // Helper: is the trip time in the future?
+  // Uses schedule.date combined with start_time / end_time so
+  // future-day trips never appear as already completed.
+  const isTripInFuture = () => {
+    const now = new Date();
+    const depDateTime = buildScheduleDateTime(schedule, schedule?.start_time);
+    const arrDateTime = buildScheduleDateTime(schedule, schedule?.end_time);
+
+    if (arrDateTime && arrDateTime > now) return true;
+    if (depDateTime && depDateTime > now) return true;
+    return false;
+  };
+
+  const tripCompleted = schedule?.is_reached && !isTripInFuture();
 
   // Fetch route from backend/ORS
   useEffect(() => {
@@ -67,6 +116,10 @@ const BusTracking = () => {
           }
         );
 
+        if (!res.ok) {
+          throw new Error(`Route request failed with status ${res.status}`);
+        }
+
         const data = await res.json();
         if (data.routes?.length > 0 && data.routes[0].geometry?.coordinates) {
           const coords = data.routes[0].geometry.coordinates.map(([lng, lat]) => [
@@ -77,9 +130,6 @@ const BusTracking = () => {
 
           const durationSec = data.routes[0].summary?.duration || 0;
           setEstimatedMinutes(Math.round(durationSec / 60));
-
-          const now = new Date();
-          setArrivalTime(new Date(now.getTime() + durationSec * 1000));
         } else {
           setError("No route found.");
         }
@@ -91,12 +141,34 @@ const BusTracking = () => {
       }
     };
 
-    if (startLat && startLng && endLat && endLng) fetchRoute();
-  }, [startLat, startLng, endLat, endLng, token]);
+    if (isBackendYetToStart) {
+      // Skip loading map route when backend says trip has not started yet
+      setRouteLoaded(true);
+      return;
+    }
 
-  // Fetch location initially + poll
+    if (startLat && startLng && endLat && endLng) fetchRoute();
+  }, [startLat, startLng, endLat, endLng, token, isBackendYetToStart]);
+
+  // Fetch live location while trip is in progress
   useEffect(() => {
-    if (!schedule?.bus_id) return;
+    if (isBackendYetToStart) {
+      // Do not poll live location when backend explicitly says trip is yet to start
+      setLocationLoaded(true);
+      setLocationStatus("not-started");
+      return;
+    }
+
+    if (!schedule?.bus_id) {
+      setLocationLoaded(true);
+      setLocationStatus("no-tracking");
+      return;
+    }
+
+    if (tripCompleted) {
+      setLocationLoaded(true);
+      return;
+    }
 
     const fetchLocation = async () => {
       try {
@@ -108,16 +180,23 @@ const BusTracking = () => {
             },
           }
         );
+
+        if (!res.ok) {
+          throw new Error(`Location request failed with status ${res.status}`);
+        }
+
         const data = await res.json();
 
-        if (data.latitude && data.longitude) {
+        if (data && data.latitude && data.longitude) {
           const pos = [data.latitude, data.longitude];
           setBusPosition(pos);
           setPastLocations((prev) => [...prev, pos]);
           setError(null);
+          setLocationStatus(null);
         } else {
-          setBusPosition(null);
-          setError("Bus has not started yet.");
+          // No live location yet -> bus not started; show at start point
+          setBusPosition([startLat, startLng]);
+          setLocationStatus("not-started");
         }
         setLocationLoaded(true);
       } catch (err) {
@@ -127,30 +206,20 @@ const BusTracking = () => {
       }
     };
 
-    fetchLocation(); // initial fetch
+    fetchLocation();
     const interval = setInterval(fetchLocation, 2000);
     return () => clearInterval(interval);
-  }, [schedule?.bus_id, token]);
+  }, [schedule?.bus_id, tripCompleted, token, startLat, startLng, isBackendYetToStart]);
 
-  // Animate bus only if is_reached is true
+  // When trip is completed (and not in future), show bus at destination and full green line
   useEffect(() => {
-    if (!schedule?.is_reached || routeCoords.length === 0) return;
+    if (!tripCompleted || routeCoords.length === 0) return;
 
-    let index = 0;
-    const animateBus = () => {
-      if (index < routeCoords.length) {
-        const pos = routeCoords[index];
-        setBusPosition(pos);
-        setPastLocations((prev) => [...prev, pos]);
-        index++;
-      } else {
-        clearInterval(animationInterval);
-      }
-    };
-
-    const animationInterval = setInterval(animateBus, 1000);
-    return () => clearInterval(animationInterval);
-  }, [schedule?.is_reached, routeCoords]);
+    const lastPoint = routeCoords[routeCoords.length - 1];
+    setBusPosition(lastPoint);
+    setPastLocations(routeCoords);
+    setLocationLoaded(true);
+  }, [tripCompleted, routeCoords]);
 
   // Show loader until both route + location fetched
   useEffect(() => {
@@ -163,67 +232,165 @@ const BusTracking = () => {
 
   if (loading) {
     return (
-      <p style={{ textAlign: "center", marginTop: "50px" }}>
-        Loading map and bus data...
-      </p>
-    );
-  }
-
-  if (error) {
-    return (
-      <p style={{ textAlign: "center", marginTop: "50px", color: "red" }}>
-        {error}
-      </p>
+      <div className="bus-tracking-loading">
+        <div className="spinner" />
+        <p>Loading map and live bus data...</p>
+      </div>
     );
   }
 
   const centerLat = (startLat + endLat) / 2;
   const centerLng = (startLng + endLng) / 2;
 
+  // Format backend times (start/end) from schedule in 12h format with AM/PM
+  const formatTime = (dateTimeStr) => {
+    if (!dateTimeStr) return "—";
+    let d = new Date(dateTimeStr);
+
+    // If only a time string like "07:30:00" is sent, build a Date for today
+    if (isNaN(d.getTime())) {
+      const timeMatch = /^([0-2]?\d):([0-5]\d)(?::([0-5]\d))?$/.exec(
+        String(dateTimeStr).trim()
+      );
+      if (timeMatch) {
+        const now = new Date();
+        const h = parseInt(timeMatch[1], 10);
+        const m = parseInt(timeMatch[2], 10);
+        const s = timeMatch[3] ? parseInt(timeMatch[3], 10) : 0;
+        d = new Date(
+          now.getFullYear(),
+          now.getMonth(),
+          now.getDate(),
+          h,
+          m,
+          s
+        );
+      }
+    }
+
+    if (isNaN(d.getTime())) return String(dateTimeStr); // Fallback: show raw string
+    return d.toLocaleTimeString([], {
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: true,
+    });
+  };
+
+  // Duration based on backend start & end times (ETA)
+  const getScheduleDurationLabel = () => {
+    const start = schedule?.end_time;
+    const end = schedule?.start_time;
+    if (!start || !end) return null;
+
+    const startDate = new Date(start);
+    const endDate = new Date(end);
+    if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) return null;
+
+    let diffMs = endDate - startDate;
+    if (diffMs < 0) diffMs += 24 * 60 * 60 * 1000;
+
+    const totalMin = Math.round(diffMs / 60000);
+    const hours = Math.floor(totalMin / 60);
+    const mins = totalMin % 60;
+
+    if (hours <= 0) return `${mins} mins`;
+    if (mins === 0) return `${hours} hrs`;
+    return `${hours} hrs ${mins} mins`;
+  };
+
   return (
     <div className="bus-tracking-container">
-      <MapContainer
-        center={[centerLat, centerLng]}
-        zoom={13}
-        style={{ height: "100%", width: "100%" }}
-      >
-        <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
-        <FitBounds
-          coords={
-            routeCoords.length
-              ? routeCoords
-              : [
-                  [startLat, startLng],
-                  [endLat, endLng],
-                ]
-          }
-        />
+      {isBackendYetToStart ? (
+        <div className="map-waiting-container">
+          <div className="bus-not-started-card">
+            <div className="bus-not-started-text">
+              <h3>Bus has not started yet</h3>
+              <p>We'll start live tracking as soon as it is on the move.</p>
+            </div>
+            <div className="bus-not-started-animation">
+              <div className="bus-road-line">
+                <span className="dot" />
+                <span className="dot" />
+                <span className="dot" />
+              </div>
+              <img
+                src={busImg}
+                alt="Idle bus"
+                className="bus-not-started-bus"
+              />
+            </div>
+          </div>
+        </div>
+      ) : (
+        <>
+          {/* Overlay animation when bus has not started yet based on live data */}
+          {locationStatus === "not-started" && (
+            <div className="bus-not-started-overlay">
+              <div className="bus-not-started-card">
+                <div className="bus-not-started-text">
+                  <h3>Bus has not started yet</h3>
+                  <p>We'll start live tracking as soon as it is on the move.</p>
+                </div>
+                <div className="bus-not-started-animation">
+                  <div className="bus-road-line">
+                    <span className="dot" />
+                    <span className="dot" />
+                    <span className="dot" />
+                  </div>
+                  <img
+                    src={busImg}
+                    alt="Idle bus"
+                    className="bus-not-started-bus"
+                  />
+                </div>
+              </div>
+            </div>
+          )}
 
-        {/* Route */}
-        {routeCoords.length > 0 && (
-          <Polyline positions={routeCoords} color="blue" weight={6} opacity={0.7} />
-        )}
+          <MapContainer
+            center={[centerLat, centerLng]}
+            zoom={13}
+            style={{ height: "100%", width: "100%" }}
+          >
+            <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
+            <FitBounds
+              coords={
+                routeCoords.length
+                  ? routeCoords
+                  : [
+                      [startLat, startLng],
+                      [endLat, endLng],
+                    ]
+              }
+            />
 
-        {/* Bus trail */}
-        {pastLocations.length > 1 && (
-          <Polyline positions={pastLocations} color="green" weight={4} opacity={0.5} />
-        )}
+            {/* Route */}
+            {routeCoords.length > 0 && (
+              <Polyline positions={routeCoords} color="blue" weight={6} opacity={0.7} />
+            )}
 
-        {/* Current bus location */}
-        {busPosition && (
-          <Marker position={busPosition} icon={busIcon}>
-            <Popup>Bus is here</Popup>
-          </Marker>
-        )}
+            {/* Bus trail */}
+            {pastLocations.length > 1 && (
+              <Polyline positions={pastLocations} color="green" weight={4} opacity={0.5} />
+            )}
 
-        {/* Start & End markers */}
-        <Marker position={[startLat, startLng]}>
-          <Popup>Start: {route.start_point || "Start"}</Popup>
-        </Marker>
-        <Marker position={[endLat, endLng]}>
-          <Popup>End: {route.end_point || "End"}</Popup>
-        </Marker>
-      </MapContainer>
+            {/* Current bus location */}
+            {busPosition && (
+              <Marker position={busPosition} icon={busIcon}>
+                <Popup>Bus is here</Popup>
+              </Marker>
+            )}
+
+            {/* Start & End markers */}
+            <Marker position={[startLat, startLng]}>
+              <Popup>Start: {route.start_point || "Start"}</Popup>
+            </Marker>
+            <Marker position={[endLat, endLng]}>
+              <Popup>End: {route.end_point || "End"}</Popup>
+            </Marker>
+          </MapContainer>
+        </>
+      )}
 
       <div className="details-section">
         <h2>Bus & Schedule Details</h2>
@@ -246,21 +413,25 @@ const BusTracking = () => {
             : "—"}
         </p>
         <p>
-          <b>Estimated Duration:</b>{" "}
-          {estimatedMinutes ? `${estimatedMinutes} mins` : "Calculating..."}
+          <b>Trip Status:</b> {schedule?.status.charAt(0).toUpperCase() + schedule?.status.slice(1) || "N/A"} 
         </p>
         <p>
-          <b>Reaching:</b> {route?.end_point}{" "}
-          {arrivalTime
-            ? `on ${arrivalTime.toLocaleDateString("en-GB")} at ${arrivalTime.toLocaleTimeString(
-                [],
-                {
-                  hour: "2-digit",
-                  minute: "2-digit",
-                }
-              )}`
-            : ""}
+          <b>Start Time :</b> {formatTime(schedule?.end_time)}
         </p>
+        <p>
+          <b>Arrived At :</b> {formatTime(schedule?.start_time)}
+        </p>
+        <p>
+          <b>Estimated Duration:</b>{" "}
+          {getScheduleDurationLabel() ||
+            (estimatedMinutes ? `${estimatedMinutes} mins` : "Calculating...")}
+        </p>
+
+        {error && (
+          <div className="error">
+            {error}
+          </div>
+        )}
       </div>
 
       <ToastContainer />
