@@ -1,24 +1,82 @@
-import React from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { Items } from "../../../Components/Static/SideItems";
 import Sidebar_header from "./Header/Sidebar_header";
 import { useNavigate, useLocation } from "react-router-dom";
 import { jwtDecode } from "jwt-decode";
+import io from "socket.io-client";
+import API_BASE_URL from "../../../utils/config";
+import { fetchChatUsers } from "../../../Components/Static/Chatusers";
 import "./sidebar.css";
 
 const Sidebar = () => {
   const token = localStorage.getItem("token");
   const navigate = useNavigate();
   const location = useLocation();
+  const locationRef = useRef(location);
 
-  // ✅ Decode token to get user role
+  const [unreadMessages, setUnreadMessages] = useState(0);
+  const [userId, setUserId] = useState(null);
+  const socketRef = useRef(null);
+
+  // Update ref for socket callback and reset on chat visit
+  useEffect(() => {
+    locationRef.current = location;
+    if (location.pathname === '/chat') {
+        setUnreadMessages(0);
+    }
+  }, [location]);
+
+  // Decode and set user ID, load initial count
+  useEffect(() => {
+    if (token) {
+      try {
+        const decoded = jwtDecode(token);
+        setUserId(decoded.user_id);
+
+        // Fetch initial unread count
+        fetchChatUsers().then(users => {
+             const totalUnread = users.reduce((acc, user) => acc + (user.unreadCount || 0), 0);
+             if (location.pathname !== '/chat') {
+                 setUnreadMessages(totalUnread);
+             }
+        });
+
+      } catch (err) {
+        console.error("Invalid token:", err);
+      }
+    }
+  }, [token]);
+  
+  // Socket Listener
+  useEffect(() => {
+      if (!userId) return;
+
+      socketRef.current = io(API_BASE_URL, {
+        transports: ["websocket"],
+        withCredentials: true,
+        path: "/socket.io"
+      });
+
+      socketRef.current.on("message", (msg) => {
+          if (msg.receiver_id === userId) {
+               if (locationRef.current.pathname !== '/chat') {
+                   setUnreadMessages(prev => prev + 1);
+               }
+          }
+      });
+
+      return () => {
+          if (socketRef.current) socketRef.current.disconnect();
+      };
+  }, [userId]);
+
+  // ✅ Decode token to get user role (Sync for render filter)
   let role = "";
   if (token) {
     try {
       const decoded = jwtDecode(token);
       role = decoded.role || "";
-    } catch (err) {
-      console.error("Invalid token:", err);
-    }
+    } catch (err) {}
   }
 
   const handleClick = (item) => {
@@ -101,7 +159,10 @@ const Sidebar = () => {
               >
                 <div className={`cont ${isActive ? "active" : ""}`}>
                   <span>{item.icon}</span>
-                  <span>{item.title}</span>
+                  <span className="sidebar-title">{item.title}</span>
+                  {item.title === "Chat" && unreadMessages > 0 && (
+                      <span className="sidebar-badge">{unreadMessages}</span>
+                  )}
                 </div>
               </li>
             );

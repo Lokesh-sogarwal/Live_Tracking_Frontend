@@ -1,9 +1,10 @@
 // chatUsersApi.js
 import myimage from "../../Assets/male-avatar-boy-face-man-user-9-svgrepo-com.svg";
+import API_BASE_URL from "../../utils/config";
 
 export const fetchChatUsers = async () => {
   try {
-    const res = await fetch("/view/chat_users", {
+    const res = await fetch(`${API_BASE_URL}/view/chat_users`, {
       method: "GET",
       headers: {
         "Content-Type": "application/json",
@@ -24,6 +25,7 @@ export const fetchChatUsers = async () => {
       id: user.user_uuid,
       name: user.fullname,
       image: user.profilePicture || myimage,
+      unreadCount: user.unread_messages || 0
     }));
   } catch (error) {
     console.error("Error fetching users:", error);

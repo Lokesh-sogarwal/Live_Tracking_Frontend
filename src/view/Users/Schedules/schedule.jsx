@@ -40,7 +40,12 @@ const ShowSchedules = () => {
 
   return (
     <div className="schedule-container">
-      <h1>📅 Bus Schedules</h1>
+      <div className="schedule-header">
+        <div>
+          <h1 className="schedule-title">📅 Bus Schedules</h1>
+          <p className="schedule-subtitle">View and filter all upcoming and past bus schedules.</p>
+        </div>
+      </div>
 
       {/* Date Filter */}
       <div className="filter-section">
@@ -56,40 +61,63 @@ const ShowSchedules = () => {
 
       {/* Schedules Table */}
       {loading ? (
-        <p>Loading schedules...</p>
+        <p className="schedule-loading">Loading schedules...</p>
       ) : schedules.length === 0 ? (
-        <p>No schedules found.</p>
+        <p className="schedule-empty">No schedules found for the selected date.</p>
       ) : (
-        <table className="schedule-table">
-          <thead>
-            <tr>
-              <th>ID</th>
-              <th>Route</th>
-              <th>Bus</th>
-              <th>Driver</th>
-              <th>Stop</th>
-              <th>Arrival</th>
-              <th>Departure</th>
-              <th>Status</th>
-              <th>Date</th>
-            </tr>
-          </thead>
-          <tbody>
-            {schedules.map((sch) => (
-              <tr key={sch.schedule_id}>
-                <td>{sch.schedule_id}</td>
-                <td>{sch.route_name}</td>
-                <td>{sch.bus_number}</td>
-                <td>{sch.driver_name}</td>
-                <td>{sch.stop_name}</td>
-                <td>{sch.arrival_time}</td>
-                <td>{sch.departure_time}</td>
-                <td>{sch.status}</td>
-                <td>{sch.date}</td>
+        <div className="schedule-table-wrapper">
+          <table className="schedule-table">
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Route</th>
+                <th>Bus</th>
+                <th>Driver</th>
+                <th>Stop</th>
+                <th>Arrival</th>
+                <th>Departure</th>
+                <th>Status</th>
+                <th>Date</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {schedules.map((sch) => {
+                const normalizedStatus = String(sch.status || '')
+                  .replace(/_/g, ' ')
+                  .toLowerCase();
+
+                const statusClass =
+                  normalizedStatus === 'on time'
+                    ? 'on_time'
+                    : normalizedStatus === 'delayed'
+                    ? 'delayed'
+                    : normalizedStatus === 'cancelled'
+                    ? 'cancelled'
+                    : '';
+
+                const statusLabel = normalizedStatus
+                  ? normalizedStatus.replace(/\b\w/g, (l) => l.toUpperCase())
+                  : 'On Time';
+
+                return (
+                  <tr key={sch.schedule_id}>
+                    <td>{sch.schedule_id}</td>
+                    <td>{sch.route_name}</td>
+                    <td>{sch.bus_number}</td>
+                    <td>{sch.driver_name}</td>
+                    <td>{sch.stop_name}</td>
+                    <td>{sch.arrival_time}</td>
+                    <td>{sch.departure_time}</td>
+                    <td>
+                      <span className={`schedule-status ${statusClass}`}>{statusLabel}</span>
+                    </td>
+                    <td>{sch.date}</td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
       )}
 
       <ToastContainer position="top-right" autoClose={3000} />

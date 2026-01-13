@@ -1,37 +1,36 @@
 import React, { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import './AllRoute.css';
-import Navbar from '../../../Components/NavBar/nav';
 import API_BASE_URL from '../../../utils/config';
 
 const AllRoutes = () => {
     const location = useLocation();
     const navigate = useNavigate();
-    const searchParams = location.state || {}; 
+    const searchParams = location.state || {};
     const [schedules, setSchedules] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
-
     useEffect(() => {
         const fetchSchedules = async () => {
             setLoading(true);
             setError(null);
-            
+
             try {
                 const token = localStorage.getItem("token");
                 const requestBody = {
                     starting_point: searchParams.source,
-                    destination: searchParams.destination
+                    destination: searchParams.destination,
                 };
 
                 const response = await fetch(`${API_BASE_URL}/bus/get_routes`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
-                        'Authorization': token ? `Bearer ${token}` : ''
+                        'Authorization': token ? `Bearer ${token}` : '',
                     },
-                    body: JSON.stringify(requestBody)
+                    body: JSON.stringify(requestBody),
                 });
+
                 console.log("Response Status:", response.status);
                 console.log("Response Headers:", [...response.headers.entries()]);
 
@@ -45,72 +44,121 @@ const AllRoutes = () => {
                 }
 
                 const routesData = await response.json();
-                console.log("Backend Response:", routesData); // Debug log
+                console.log("Backend Response:", routesData);
 
-                // The backend returns a list of routes, each containing a 'schedules' array.
-                // We need to flatten this to get a single list of all available bus schedules.
-                
                 let allSchedules = [];
 
                 if (Array.isArray(routesData)) {
-                    allSchedules = routesData.flatMap(route => {
+                    allSchedules = routesData.flatMap((route) => {
                         if (Array.isArray(route.schedules)) {
-                            return route.schedules.map(schedule => ({
+                            return route.schedules.map((schedule) => ({
                                 ...schedule,
-                                parentRouteName: route.route_name, // Attach route name to schedule
-                                parentRouteObj: route // Store the full route object for tracking
+                                parentRouteName: route.route_name,
+                                parentRouteObj: route,
                             }));
                         }
                         return [];
                     });
                 }
 
-                console.log("All Schedules (Extracted):", allSchedules); // Debug log
+                console.log("All Schedules (Extracted):", allSchedules);
 
-                // Client-side filtering for Date
+                // Filter by selected date if provided
                 if (searchParams.date) {
                     try {
-                        // Create a normalized string for comparison (YYYY-MM-DD)
                         const searchDateObj = new Date(searchParams.date);
-                        // Check if valid date
                         if (!isNaN(searchDateObj.getTime())) {
-                             // Use local date string comparison to avoid timezone shifts
                             const searchDateStr = searchDateObj.toISOString().split('T')[0];
-                            
-                            allSchedules = allSchedules.filter(item => {
-                                if (!item.date) return true; 
-                                // Backend returns "YYYY-MM-DD" or "YYYY-MM-DD HH:MM:SS"
-                                return item.date.startsWith(searchDateStr) || 
-                                       item.date.startsWith(searchParams.date); 
+
+                            allSchedules = allSchedules.filter((item) => {
+                                if (!item.date) return true;
+                                return (
+                                    item.date.startsWith(searchDateStr) ||
+                                    item.date.startsWith(searchParams.date)
+                                );
                             });
                         }
                     } catch (e) {
-                        console.warn("Date filtering error:", e);
+                        console.warn('Date filtering error:', e);
                     }
                 }
 
-                // Map to UI format
-                // Backend returns status like "on_time", we format it for display
-                const formatStatus = (s) => s ? s.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) : 'On Time';
+                // Sort routes date-wise and time-wise (earliest first)
+                const toDateTime = (sch) => {
+                    try {
+                        if (sch.date && sch.start_time) {
+                            let d = new Date(`${sch.date}T${sch.start_time}`);
+                            if (!isNaN(d.getTime())) return d;
 
-                const mappedSchedules = allSchedules.map(sch => ({
+                            d = new Date(`${sch.date} ${sch.start_time}`);
+                            if (!isNaN(d.getTime())) return d;
+                        }
+
+                        if (sch.start_time) {
+                            const d = new Date(`1970-01-01T${sch.start_time}`);
+                            if (!isNaN(d.getTime())) return d;
+                        }
+
+                        if (sch.date) {
+                            const d = new Date(sch.date);
+                            if (!isNaN(d.getTime())) return d;
+                        }
+                    } catch (e) {
+                        console.warn('DateTime sort error for schedule', sch, e);
+                    }
+                    return null;
+                };
+
+                allSchedules.sort((a, b) => {
+                    const da = toDateTime(a);
+                    const db = toDateTime(b);
+
+                    if (da && db) return da - db;
+                    if (da && !db) return -1;
+                    if (!da && db) return 1;
+                    return 0;
+                });
+
+                // Use backend status as source of truth and format it for display
+                const getStatusLabel = (sch) => {
+                    const raw = (sch.status || '').trim().toLowerCase();
+
+                    if (!raw && sch.is_reached) return 'Completed';
+                    if (!raw) return 'On Time';
+
+                    if (sch.is_reached || raw === 'completed' || raw === 'finished') {
+                        return 'Completed';
+                    }
+
+                    return raw.replace(/_/g, ' ').replace(/\b\w/g, (l) => l.toUpperCase());
+                };
+
+                // Exclude completed routes entirely from the list based on backend flags
+                const visibleSchedules = allSchedules.filter((sch) => {
+                    const raw = (sch.status || '').toLowerCase();
+                    return !sch.is_reached && raw !== 'completed' && raw !== 'finished';
+                });
+
+                const mappedSchedules = visibleSchedules.map((sch) => ({
                     id: sch.schedule_id,
-                    routeNo: sch.parentRouteName || 'N/A', // From the parent route object
+                    routeNo: sch.parentRouteName || 'N/A',
                     busName: sch.bus_number || 'Bus Service',
-                    departure: extractTime(sch.departure_time),
-                    arrival: extractTime(sch.arrival_time),
-                    fullDeparture: sch.departure_time, // Keep full string for duration calc
-                    fullArrival: sch.arrival_time,     // Keep full string for duration calc
-                    price: sch.price || 44, // Default price 
-                    status: formatStatus(sch.status), // Format "on_time" -> "On Time"
-                    rawStatus: sch.status || 'on_time', // Keep raw for styling class
-                    type: 'AC Seater' // Default type
+                    departure: extractTime(sch.start_time),
+                    arrival: extractTime(sch.end_time),
+                    fullDeparture: sch.start_time,
+                    fullArrival: sch.end_time,
+                    price: sch.price || 44,
+                    status: getStatusLabel(sch),
+                    rawStatus: sch.status || 'on_time',
+                    type: 'AC Seater',
+                    date: sch.date || null,
+                    parentRouteObj: sch.parentRouteObj,
+                    rawSchedule: sch,
                 }));
 
                 setSchedules(mappedSchedules);
-
             } catch (error) {
-                console.error("Error fetching routes:", error);
+                console.error('Error fetching routes:', error);
                 setError(error.message);
                 setSchedules([]);
             } finally {
@@ -124,7 +172,6 @@ const AllRoutes = () => {
             setLoading(false);
             setSchedules([]);
         }
-
     }, [searchParams.date, searchParams.source, searchParams.destination]);
 
     // Helper to extract HH:MM AM/PM from timestamp string
@@ -144,12 +191,12 @@ const AllRoutes = () => {
         try {
             const start = new Date(startStr);
             const end = new Date(endStr);
-            
+
             if (isNaN(start.getTime()) || isNaN(end.getTime())) return '--';
 
             let diffMs = end - start;
             if (diffMs < 0) diffMs += 24 * 60 * 60 * 1000; // Handle overnight if dates are just times (rare with full dates)
-            
+
             const diffMin = Math.floor(diffMs / 1000 / 60);
             const h = Math.floor(diffMin / 60);
             const m = diffMin % 60;
@@ -162,13 +209,13 @@ const AllRoutes = () => {
     const handleCardClick = (schedule) => {
         if (schedule.status === 'Cancelled') return;
         console.log("Navigating to bus tracking with schedule:", schedule);
-        // Pass both the schedule and the parent route object (required by BusTracking)
-        navigate('/bus_tracking', { 
-            state: { 
-                schedule: schedule, 
+        // Pass both the full original schedule and the parent route object (required by BusTracking)
+        navigate('/bus_tracking', {
+            state: {
+                schedule: schedule.rawSchedule || schedule,
                 route: schedule.parentRouteObj,
-                ...searchParams 
-            } 
+                ...searchParams
+            }
         });
     };
 
@@ -181,11 +228,16 @@ const AllRoutes = () => {
     const getStatusTagClass = (status) => {
         // Normalize status string: replace underscores with spaces, lower case
         const normalizedStatus = status?.replace(/_/g, ' ').toLowerCase();
-        
+
         switch (normalizedStatus) {
             case 'on time': return 'on_time';
             case 'delayed': return 'delayed';
             case 'cancelled': return 'cancelled';
+            case 'completed': return 'completed';
+            case 'not started yet':
+            case 'yet to start':
+                return 'not_started';
+            case 'running': return 'on_time';
             default: return '';
         }
     };
@@ -201,7 +253,7 @@ const AllRoutes = () => {
                     </div>
                     {/* Arrow Divider */}
                     <div style={{ color: '#cbd5e1' }}>
-                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14" /><path d="m12 5 7 7-7 7" /></svg>
                     </div>
                     <div className="route-info-item">
                         <span className="route-info-label">To</span>
@@ -242,21 +294,22 @@ const AllRoutes = () => {
                                     <div className="bus-details">
                                         <h3>{schedule.busName}</h3>
                                         <span className="bus-type">{schedule.type} • Route {schedule.routeNo}</span>
+                                        <span className="bus-date">{schedule.date ? formatDate(schedule.date) : formatDate(searchParams.date)}</span>
                                     </div>
                                 </div>
 
                                 {/* Center: Timing */}
                                 <div className="card-center">
                                     <div className="time-group">
-                                        <span className="time">{schedule.departure}</span>
+                                        <span className="time">{schedule.arrival}</span>
                                         <span className="time-label">Departure</span>
                                     </div>
                                     <div className="duration-visual">
-                                        <span className="time-label">{getDuration(schedule.fullDeparture, schedule.fullArrival)}</span>
+                                        <span className="time-label">{getDuration(schedule.fullArrival, schedule.fullDeparture)}</span>
                                         <div className="visual-line"></div>
                                     </div>
                                     <div className="time-group">
-                                        <span className="time">{schedule.arrival}</span>
+                                        <span className="time">{schedule.departure}</span>
                                         <span className="time-label">Arrival</span>
                                     </div>
                                 </div>

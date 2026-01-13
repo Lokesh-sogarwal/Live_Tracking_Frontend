@@ -81,6 +81,9 @@ const DocumentsList = () => {
     <div className="doc-page">
       <ToastContainer />
       <h2 className="doc-title">📄 Uploaded Driver Documents</h2>
+      <p className="doc-subtitle">
+        Review, verify or reject driver documents submitted to the system.
+      </p>
 
       {loading ? (
         <p className="loading-text">Loading documents...</p>
@@ -107,13 +110,23 @@ const DocumentsList = () => {
                 ? "Rejected"
                 : "Pending";
 
+              const statusClass = doc.is_verified
+                ? "verified"
+                : doc.is_rejected
+                ? "rejected"
+                : "pending";
+
               return (
                 <tr key={doc.id}>
                   <td>{doc.id}</td>
                   <td>{doc.document_name}</td>
                   <td>{doc.driver_id}</td>
                   <td>{doc.uploaded_at}</td>
-                  <td>{statusLabel}</td>
+                  <td>
+                    <span className={`status-pill ${statusClass}`}>
+                      {statusLabel}
+                    </span>
+                  </td>
                   <td>
                     <a
                       href={`${API_BASE_URL}/data/uploads/${doc.document_path}`}
