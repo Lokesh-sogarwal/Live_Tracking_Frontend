@@ -41,11 +41,37 @@ const LiveTracking = () => {
     }
   }, []);
 
+  // Debounce Search for Starting Point
+  useEffect(() => {
+    const delayDebounceFn = setTimeout(() => {
+      if (startingPoint && startingPoint.length > 2) {
+        fetchSuggestions(startingPoint, setStartSuggestions, setStartLoading);
+      } else {
+        setStartSuggestions([]);
+      }
+    }, 800);
+    return () => clearTimeout(delayDebounceFn);
+  }, [startingPoint]);
+
+  // Debounce Search for Destination
+  useEffect(() => {
+    const delayDebounceFn = setTimeout(() => {
+      if (destination && destination.length > 2) {
+        fetchSuggestions(destination, setDestSuggestions, setDestLoading);
+      } else {
+        setDestSuggestions([]);
+      }
+    }, 800);
+    return () => clearTimeout(delayDebounceFn);
+  }, [destination]);
+
   const fetchSuggestions = async (query, setter, setLoading) => {
     if (!query) {
       setter([]);
       return;
     }
+    // Safety check: Avoid invalid queries that cause errors
+    if (query.includes('[') || query.includes(']')) return;
     setLoading(true);
     try {
       const res = await fetch(
@@ -68,30 +94,19 @@ const LiveTracking = () => {
     clearSuggestions([]);
   };
 
-  const handleGetRoute = async () => {
+  const handleGetRoute = () => {
     if (!startingPoint || !destination) {
       toast.warn("Please provide both starting point and destination");
       return;
     }
-    try {
-      const res = await fetch("http://localhost:5001/bus/get_routes", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
-        },
-        body: JSON.stringify({ starting_point: startingPoint, destination }),
-      });
-      const data = await res.json();
-      if (res.ok) {
-        navigate("/all_routes", { state: { routeData: data } });
-      } else {
-        toast.error(data.message || data.error);
-      }
-    } catch (err) {
-      console.error("Server error", err);
-      toast.error("Server error while fetching route");
-    }
+    // Navigate to AllRoutes, letting it handle the fetching logic based on parameters
+    navigate("/all_routes", { 
+        state: { 
+            source: startingPoint, 
+            destination: destination 
+            // We can add a date field here if we add a date picker later
+        } 
+    });
   };
 
   // Handle click outside to close suggestions
@@ -133,7 +148,6 @@ const LiveTracking = () => {
                 value={startingPoint}
                 onChange={(e) => {
                     setStartingPoint(e.target.value);
-                    fetchSuggestions(e.target.value, setStartSuggestions, setStartLoading);
                 }}
                 placeholder="Current Location"
                 />
@@ -163,7 +177,6 @@ const LiveTracking = () => {
                 value={destination}
                 onChange={(e) => {
                     setDestination(e.target.value);
-                    fetchSuggestions(e.target.value, setDestSuggestions, setDestLoading);
                 }}
                 placeholder="Search Destination"
                 />

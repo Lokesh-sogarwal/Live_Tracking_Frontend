@@ -4,6 +4,7 @@ import io from "socket.io-client";
 import { fetchChatUsers } from "../../Components/Static/Chatusers";
 import "./chat.css";
 import { jwtDecode } from "jwt-decode";
+import API_BASE_URL from "../../utils/config";
 
 let socket; // Keep socket outside component
 
@@ -35,7 +36,7 @@ const Chat = () => {
 
     // Initialize socket only once
     useEffect(() => {
-        socket = io("http://localhost:5001", { 
+        socket = io(API_BASE_URL, { 
             transports: ["websocket"],
             withCredentials: true,
             path: "/socket.io"

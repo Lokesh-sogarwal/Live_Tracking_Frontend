@@ -5,6 +5,7 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faFacebook, faGoogle, faTwitter } from "@fortawesome/free-brands-svg-icons";
 import { useNavigate } from "react-router-dom";
 import { toast, ToastContainer } from "react-toastify"; 
+import API_BASE_URL from "../../../utils/config";
 
 const LoginSignup = () => {
   const [action, setAction] = useState("Login");
@@ -42,7 +43,7 @@ const LoginSignup = () => {
 
     if (action === "Login") {
       try {
-        const res = await fetch("http://localhost:5001/auth/login", {
+        const res = await fetch(`${API_BASE_URL}/auth/login`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(formData),
@@ -67,7 +68,7 @@ const LoginSignup = () => {
       }
     } else {
       try {
-        const res = await fetch("http://localhost:5001/auth/signup", {
+        const res = await fetch(`${API_BASE_URL}/auth/signup`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({

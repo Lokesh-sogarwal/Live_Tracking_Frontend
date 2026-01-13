@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from "react";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import "./BusRoute.css";
+import API_BASE_URL from "../../../utils/config";
 
 const RouteCreation = () => {
   const containerRef = useRef(null);
@@ -216,7 +217,7 @@ const RouteCreation = () => {
       }
 
       const token = localStorage.getItem("token");
-      const response = await fetch("http://127.0.0.1:5001/bus/bus_route", {
+      const response = await fetch(`${API_BASE_URL}/bus/bus_route`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

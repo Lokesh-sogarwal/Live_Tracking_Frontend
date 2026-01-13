@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import "./Documents.css";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import API_BASE_URL from "../../../utils/config";
 
 const DocumentsList = () => {
   const [documents, setDocuments] = useState([]);
@@ -10,7 +11,7 @@ const DocumentsList = () => {
   const fetchDocuments = async () => {
     try {
       const token = localStorage.getItem("token");
-      const response = await fetch("http://127.0.0.1:5001/data/get_documents", {
+      const response = await fetch(`${API_BASE_URL}/data/get_documents`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       const data = await response.json();
@@ -29,7 +30,7 @@ const DocumentsList = () => {
   const handleVerify = async (id) => {
     try {
       const token = localStorage.getItem("token");
-      const res = await fetch(`http://127.0.0.1:5001/data/verify_document/${id}`, {
+      const res = await fetch(`${API_BASE_URL}/data/verify_document/${id}`, {
         method: "POST",
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -52,7 +53,7 @@ const DocumentsList = () => {
   const handleReject = async (id) => {
     try {
       const token = localStorage.getItem("token");
-      const res = await fetch(`http://127.0.0.1:5001/data/reject_document/${id}`, {
+      const res = await fetch(`${API_BASE_URL}/data/reject_document/${id}`, {
         method: "POST",
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -115,7 +116,7 @@ const DocumentsList = () => {
                   <td>{statusLabel}</td>
                   <td>
                     <a
-                      href={`http://127.0.0.1:5001/data/uploads/${doc.document_path}`}
+                      href={`${API_BASE_URL}/data/uploads/${doc.document_path}`}
                       target="_blank"
                       rel="noopener noreferrer"
                     >

@@ -1,176 +1,285 @@
-import { useEffect, useState } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
-import "./AllRoute.css";
-import busImg from "../../../Assets/bus.png";
+import React, { useEffect, useState } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
+import './AllRoute.css';
+import Navbar from '../../../Components/NavBar/nav';
+import API_BASE_URL from '../../../utils/config';
 
-// 🌍 Haversine formula (distance in km)
-const haversine = (coord1, coord2) => {
-  if (!coord1 || !coord2 || coord1.some(isNaN) || coord2.some(isNaN)) return 0;
-  const R = 6371; // km
-  const dLat = ((coord2[0] - coord1[0]) * Math.PI) / 180;
-  const dLon = ((coord2[1] - coord1[1]) * Math.PI) / 180;
-  const lat1 = (coord1[0] * Math.PI) / 180;
-  const lat2 = (coord2[0] * Math.PI) / 180;
+const AllRoutes = () => {
+    const location = useLocation();
+    const navigate = useNavigate();
+    const searchParams = location.state || {}; 
+    const [schedules, setSchedules] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
 
-  const a =
-    Math.sin(dLat / 2) ** 2 +
-    Math.sin(dLon / 2) ** 2 * Math.cos(lat1) * Math.cos(lat2);
+    useEffect(() => {
+        const fetchSchedules = async () => {
+            setLoading(true);
+            setError(null);
+            
+            try {
+                const token = localStorage.getItem("token");
+                const requestBody = {
+                    starting_point: searchParams.source,
+                    destination: searchParams.destination
+                };
 
-  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-  return R * c; // km
-};
+                const response = await fetch(`${API_BASE_URL}/bus/get_routes`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': token ? `Bearer ${token}` : ''
+                    },
+                    body: JSON.stringify(requestBody)
+                });
+                console.log("Response Status:", response.status);
+                console.log("Response Headers:", [...response.headers.entries()]);
 
-// ⏱️ Safe time parser
-const parseTime = (timeStr) => {
-  if (!timeStr) return null;
-  const parts = timeStr.split(":").map(Number);
-  let [h, m, s] = parts;
-  if (isNaN(h) || isNaN(m)) return null;
-  if (isNaN(s)) s = 0;
-  const d = new Date();
-  d.setHours(h, m, s, 0);
-  return d;
-};
+                if (response.status === 404) {
+                    setSchedules([]);
+                    return;
+                }
 
-// 🚍 Calculate total ETA from start → end using lat/lng
-const calculateRouteETA = (startLat, startLng, endLat, endLng, avgSpeed = 40) => {
-  if ([startLat, startLng, endLat, endLng].some((coord) => coord === null || coord === undefined || isNaN(coord))) {
-    return { distance: 0, eta: "N/A", duration: 0 };
-  }
+                if (!response.ok) {
+                    throw new Error('Failed to fetch routes');
+                }
 
-  const distance = haversine([startLat, startLng], [endLat, endLng]); // km
-  const travelMinutes = Math.round((distance / avgSpeed) * 60);
-  const now = new Date();
-  const etaTime = new Date(now.getTime() + travelMinutes * 60000);
+                const routesData = await response.json();
+                console.log("Backend Response:", routesData); // Debug log
 
-  return {
-    distance: distance.toFixed(2),
-    eta: etaTime.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
-    duration: travelMinutes,
-  };
-};
+                // The backend returns a list of routes, each containing a 'schedules' array.
+                // We need to flatten this to get a single list of all available bus schedules.
+                
+                let allSchedules = [];
 
-const RoutesPage = () => {
-  const location = useLocation();
-  const navigate = useNavigate();
-  const [routeData, setRouteData] = useState(null);
-  const avgSpeed = 40;
+                if (Array.isArray(routesData)) {
+                    allSchedules = routesData.flatMap(route => {
+                        if (Array.isArray(route.schedules)) {
+                            return route.schedules.map(schedule => ({
+                                ...schedule,
+                                parentRouteName: route.route_name, // Attach route name to schedule
+                                parentRouteObj: route // Store the full route object for tracking
+                            }));
+                        }
+                        return [];
+                    });
+                }
 
-  // Fetch routeData from previous page if available
-  const routeFromState = location.state?.routeData;
+                console.log("All Schedules (Extracted):", allSchedules); // Debug log
 
-  useEffect(() => {
-    if (routeFromState) {
-      setRouteData(routeFromState[0]); // assuming backend sends an array
-    }
-  }, [routeFromState]);
+                // Client-side filtering for Date
+                if (searchParams.date) {
+                    try {
+                        // Create a normalized string for comparison (YYYY-MM-DD)
+                        const searchDateObj = new Date(searchParams.date);
+                        // Check if valid date
+                        if (!isNaN(searchDateObj.getTime())) {
+                             // Use local date string comparison to avoid timezone shifts
+                            const searchDateStr = searchDateObj.toISOString().split('T')[0];
+                            
+                            allSchedules = allSchedules.filter(item => {
+                                if (!item.date) return true; 
+                                // Backend returns "YYYY-MM-DD" or "YYYY-MM-DD HH:MM:SS"
+                                return item.date.startsWith(searchDateStr) || 
+                                       item.date.startsWith(searchParams.date); 
+                            });
+                        }
+                    } catch (e) {
+                        console.warn("Date filtering error:", e);
+                    }
+                }
 
-  // Navigate to bus tracking page
-  const handleCardClick = (schedule) => {
-    const route = {
-      ...routeData,
-      start_lat: routeData.start_lat || 0,
-      start_lng: routeData.start_lng || 0,
-      end_lat: routeData.end_lat || 0,
-      end_lng: routeData.end_lng || 0,
+                // Map to UI format
+                // Backend returns status like "on_time", we format it for display
+                const formatStatus = (s) => s ? s.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) : 'On Time';
+
+                const mappedSchedules = allSchedules.map(sch => ({
+                    id: sch.schedule_id,
+                    routeNo: sch.parentRouteName || 'N/A', // From the parent route object
+                    busName: sch.bus_number || 'Bus Service',
+                    departure: extractTime(sch.departure_time),
+                    arrival: extractTime(sch.arrival_time),
+                    fullDeparture: sch.departure_time, // Keep full string for duration calc
+                    fullArrival: sch.arrival_time,     // Keep full string for duration calc
+                    price: sch.price || 44, // Default price 
+                    status: formatStatus(sch.status), // Format "on_time" -> "On Time"
+                    rawStatus: sch.status || 'on_time', // Keep raw for styling class
+                    type: 'AC Seater' // Default type
+                }));
+
+                setSchedules(mappedSchedules);
+
+            } catch (error) {
+                console.error("Error fetching routes:", error);
+                setError(error.message);
+                setSchedules([]);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        if (searchParams.source || searchParams.destination) {
+            fetchSchedules();
+        } else {
+            setLoading(false);
+            setSchedules([]);
+        }
+
+    }, [searchParams.date, searchParams.source, searchParams.destination]);
+
+    // Helper to extract HH:MM AM/PM from timestamp string
+    const extractTime = (dateStr) => {
+        if (!dateStr) return '--:--';
+        try {
+            const date = new Date(dateStr);
+            if (isNaN(date.getTime())) return dateStr; // Return as is if not a valid date
+            return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        } catch (e) {
+            return dateStr;
+        }
     };
 
-    navigate("/bus_tracking", {
-      state: { schedule, route },
-    });
-  };
+    const getDuration = (startStr, endStr) => {
+        if (!startStr || !endStr) return '--';
+        try {
+            const start = new Date(startStr);
+            const end = new Date(endStr);
+            
+            if (isNaN(start.getTime()) || isNaN(end.getTime())) return '--';
 
-  if (!routeData) return <p className="no-route">No route data available</p>;
+            let diffMs = end - start;
+            if (diffMs < 0) diffMs += 24 * 60 * 60 * 1000; // Handle overnight if dates are just times (rare with full dates)
+            
+            const diffMin = Math.floor(diffMs / 1000 / 60);
+            const h = Math.floor(diffMin / 60);
+            const m = diffMin % 60;
+            return `${h}h ${m}m`;
+        } catch (e) {
+            return '--';
+        }
+    };
 
-  // Calculate ETAs stop by stop
-  const calculateETAs = (schedules) => {
-    if (!schedules?.length) return [];
+    const handleCardClick = (schedule) => {
+        if (schedule.status === 'Cancelled') return;
+        console.log("Navigating to bus tracking with schedule:", schedule);
+        // Pass both the schedule and the parent route object (required by BusTracking)
+        navigate('/bus_tracking', { 
+            state: { 
+                schedule: schedule, 
+                route: schedule.parentRouteObj,
+                ...searchParams 
+            } 
+        });
+    };
 
-    const sorted = [...schedules].sort((a, b) => (a.sequence || 0) - (b.sequence || 0));
-    let currentTime = null;
+    const formatDate = (dateString) => {
+        if (!dateString) return 'Date Not Selected';
+        const options = { weekday: 'short', month: 'short', day: 'numeric' };
+        return new Date(dateString).toLocaleDateString(undefined, options);
+    };
 
-    return sorted.map((stop, idx) => {
-      if (idx === 0) {
-        currentTime = parseTime(stop.arrival_time);
-        return {
-          ...stop,
-          est_reach: currentTime
-            ? currentTime.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
-            : "Invalid time",
-          duration: 0,
-        };
-      }
+    const getStatusTagClass = (status) => {
+        // Normalize status string: replace underscores with spaces, lower case
+        const normalizedStatus = status?.replace(/_/g, ' ').toLowerCase();
+        
+        switch (normalizedStatus) {
+            case 'on time': return 'on_time';
+            case 'delayed': return 'delayed';
+            case 'cancelled': return 'cancelled';
+            default: return '';
+        }
+    };
 
-      const prevStop = sorted[idx - 1];
-      const distance =
-        prevStop.stop_lat && stop.stop_lat
-          ? haversine(
-              [Number(prevStop.stop_lat), Number(prevStop.stop_lng)],
-              [Number(stop.stop_lat), Number(stop.stop_lng)]
-            )
-          : 0;
+    return (
+        <div className="main-container">
+            <div className="routes-container">
+                {/* Header Info Card */}
+                <div className="route-info">
+                    <div className="route-info-item">
+                        <span className="route-info-label">From</span>
+                        <span className="route-info-value">{searchParams.source || '...'}</span>
+                    </div>
+                    {/* Arrow Divider */}
+                    <div style={{ color: '#cbd5e1' }}>
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+                    </div>
+                    <div className="route-info-item">
+                        <span className="route-info-label">To</span>
+                        <span className="route-info-value">{searchParams.destination || '...'}</span>
+                    </div>
+                    <div className="route-info-item">
+                        <span className="route-info-label">Journey Date</span>
+                        <span className="route-info-value">{formatDate(searchParams.date)}</span>
+                    </div>
+                    <div className="route-info-item">
+                        <span className="route-info-label">Total Buses</span>
+                        <span className="route-info-value">{loading ? '...' : schedules.length}</span>
+                    </div>
+                </div>
 
-      const travelMinutes = Math.round((distance / avgSpeed) * 60);
-      if (currentTime) currentTime = new Date(currentTime.getTime() + travelMinutes * 60000);
+                {/* List View of Schedules */}
+                {loading ? (
+                    <div className="no-route" style={{ textAlign: 'center', marginTop: '50px', color: '#64748b' }}>
+                        <h3>Loading routes...</h3>
+                    </div>
+                ) : schedules.length > 0 ? (
+                    <div className="schedule-cards">
+                        {schedules.map((schedule) => (
+                            <div
+                                key={schedule.id}
+                                className="schedule-card"
+                                onClick={() => handleCardClick(schedule)}
+                            >
+                                {/* Left: Bus Info */}
+                                <div className="card-left">
+                                    <div className="bus-icon-container">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                            <path d="M8 6v6" /><path d="M15 6v6" /><path d="M2 12h19.6" />
+                                            <path d="M18 18h3s.5-1.7.8-2.8c.1-.4.2-.8.2-1.2 0-.4-.1-.8-.2-1.2l-1.4-5C20.1 6.8 19.1 6 18 6H4a2 2 0 0 0-2 2v10h3" />
+                                            <circle cx="7" cy="18" r="2" /><path d="M9 18h5" /><circle cx="16" cy="18" r="2" />
+                                        </svg>
+                                    </div>
+                                    <div className="bus-details">
+                                        <h3>{schedule.busName}</h3>
+                                        <span className="bus-type">{schedule.type} • Route {schedule.routeNo}</span>
+                                    </div>
+                                </div>
 
-      return {
-        ...stop,
-        est_reach: currentTime
-          ? currentTime.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
-          : "Calculating...",
-        duration: travelMinutes,
-      };
-    });
-  };
+                                {/* Center: Timing */}
+                                <div className="card-center">
+                                    <div className="time-group">
+                                        <span className="time">{schedule.departure}</span>
+                                        <span className="time-label">Departure</span>
+                                    </div>
+                                    <div className="duration-visual">
+                                        <span className="time-label">{getDuration(schedule.fullDeparture, schedule.fullArrival)}</span>
+                                        <div className="visual-line"></div>
+                                    </div>
+                                    <div className="time-group">
+                                        <span className="time">{schedule.arrival}</span>
+                                        <span className="time-label">Arrival</span>
+                                    </div>
+                                </div>
 
-  const schedulesWithETA = calculateETAs(routeData.schedules);
-
-  const directETA = calculateRouteETA(
-    Number(routeData.start_lat),
-    Number(routeData.start_lng),
-    Number(routeData.end_lat),
-    Number(routeData.end_lng),
-    avgSpeed
-  );
-
-  return (
-    <div className="routes-container">
-      <div className="route-info">
-        <p><b>From:</b> {routeData.start_point}</p>
-        <p><b>To:</b> {routeData.end_point}</p>
-        <p>📏 <b>Distance:</b> {directETA.distance} km</p>
-        <p>⏱️ <b>Estimated Travel Time:</b> {directETA.duration} min</p>
-      </div>
-
-      {schedulesWithETA?.length > 0 ? (
-        <div className="schedule-cards">
-          {schedulesWithETA.map((sched) => (
-            <div
-              key={sched.schedule_id}
-              className={`schedule-card status-${sched.status}`}
-              onClick={() => handleCardClick(sched)}
-            >
-              <div className="card-header">
-                <img src={busImg} alt="Bus" className="bus-img" />
-                <h3>{routeData.start_point} → {routeData.end_point}</h3>
-              </div>
-              <div className="card-body">
-                <p>
-                  <b>Start:</b> {sched.arrival_time} → <b>Est. Reach:</b> {sched.est_reach}
-                  {sched.duration > 0 && <span> ({sched.duration} min)</span>}
-                </p>
-                <p><b>Status:</b> <span className={`status-tag ${sched.status}`}>{sched.status}</span></p>
-                <p><b>Date:</b> {new Date(sched.date).toLocaleDateString("en-GB")}</p>
-                <p><b>Stop:</b> {sched.stop_name}</p>
-              </div>
+                                {/* Right: Price & Status */}
+                                <div className="card-right">
+                                    <div className="price">₹{schedule.price}</div>
+                                    <div className={`status-badge ${getStatusTagClass(schedule.status)}`}>
+                                        {schedule.status}
+                                    </div>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                ) : (
+                    <div className="no-route" style={{ textAlign: 'center', marginTop: '50px', color: '#64748b' }}>
+                        <h3>{error ? 'Search Failed' : 'No buses found'}</h3>
+                        <p>{error ? 'Unable to connect to the server.' : 'We couldn\'t find any buses for your search criteria.'}</p>
+                    </div>
+                )}
             </div>
-          ))}
         </div>
-      ) : (
-        <p>No schedules available for this route.</p>
-      )}
-    </div>
-  );
+    );
 };
 
-export default RoutesPage;
+export default AllRoutes;

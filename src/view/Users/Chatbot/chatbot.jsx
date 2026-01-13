@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from "react";
+import API_BASE_URL from "../../../utils/config";
 
 export default function Chat() {
   const [input, setInput] = useState("");
@@ -35,7 +36,7 @@ export default function Chat() {
     try {
       const token = localStorage.getItem("token");
 
-      const res = await fetch("http://localhost:5001/chatbot/chat", {
+      const res = await fetch(`${API_BASE_URL}/chatbot/chat`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

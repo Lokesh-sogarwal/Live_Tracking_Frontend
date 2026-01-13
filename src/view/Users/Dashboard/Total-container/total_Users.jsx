@@ -3,6 +3,7 @@ import CountUp from 'react-countup';
 import './total.css';
 import { useNavigate } from 'react-router-dom';
 import { FaUserFriends } from "react-icons/fa";
+import API_BASE_URL from "../../../../utils/config";
 
 const Total_Users = () => {
   const [totalUsers, setTotalUsers] = useState(0);
@@ -12,7 +13,7 @@ const Total_Users = () => {
   useEffect(() => {
     async function fetchData() {
       try {
-        const res = await fetch("/data/get_data", {
+        const res = await fetch(`${API_BASE_URL}/data/get_data`, {
           method: "GET",
           headers: {
             "Content-Type": "application/json",

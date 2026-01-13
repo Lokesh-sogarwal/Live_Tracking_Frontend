@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import ReactECharts from 'echarts-for-react';
+import API_BASE_URL from '../../../../utils/config';
 
 export default function Chart() {
   const [chartData, setChartData] = useState({ dates: [], counts: [] });
@@ -7,7 +8,7 @@ export default function Chart() {
   useEffect(() => {
     async function fetchData() {
       try {
-        const res = await fetch("http://localhost:5001/data/get_data", {
+        const res = await fetch(`${API_BASE_URL}/data/get_data`, {
           method: "GET",
           headers: {
             "Content-Type": "application/json",
