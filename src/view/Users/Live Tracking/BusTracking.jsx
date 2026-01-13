@@ -14,6 +14,7 @@ import busImg from "../../../Assets/bus.png";
 import myImg from "../../../Assets/male-avatar-boy-face-man-user-9-svgrepo-com.svg";
 import "leaflet/dist/leaflet.css";
 import "./BusTracking.css";
+import API_BASE_URL from "../../../utils/config";
 
 // Fit map to route bounds
 const FitBounds = ({ coords }) => {
@@ -58,7 +59,7 @@ const BusTracking = () => {
     const fetchRoute = async () => {
       try {
         const res = await fetch(
-          `http://localhost:5001/view/api/get_route/${startLat}/${startLng}/${endLat}/${endLng}`,
+          `${API_BASE_URL}/view/api/get_route/${startLat}/${startLng}/${endLat}/${endLng}`,
           {
             headers: {
               Authorization: `Bearer ${token}`,
@@ -100,7 +101,7 @@ const BusTracking = () => {
     const fetchLocation = async () => {
       try {
         const res = await fetch(
-          `http://localhost:5001/view/get_location/${schedule.bus_id}`,
+          `${API_BASE_URL}/view/get_location/${schedule.bus_id}`,
           {
             headers: {
               Authorization: `Bearer ${token}`,

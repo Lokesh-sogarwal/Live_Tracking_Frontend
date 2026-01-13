@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import "./ShowSchedules.css";
+import API_BASE_URL from "../../../utils/config";
 
 const ShowSchedules = () => {
   const [schedules, setSchedules] = useState([]);
@@ -12,7 +13,7 @@ const ShowSchedules = () => {
   const fetchSchedules = async (filterDate = "") => {
     try {
       setLoading(true);
-      let url = "http://127.0.0.1:5001/bus/schedules";
+      let url = `${API_BASE_URL}/bus/schedules`;
       if (filterDate) {
         url += `?date=${filterDate}`;
       }

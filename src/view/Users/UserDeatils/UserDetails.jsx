@@ -10,6 +10,7 @@ import "react-toastify/dist/ReactToastify.css";
 import "react-confirm-alert/src/react-confirm-alert.css";
 import Dropdown from "react-bootstrap/Dropdown";
 import DropdownButton from "react-bootstrap/DropdownButton";
+import API_BASE_URL from "../../../utils/config";
 
 Modal.setAppElement("#root");
 
@@ -72,7 +73,7 @@ const UserDetails = () => {
     const fetchUsers = async () => {
       setLoading(true);
       try {
-        const res = await fetch("/view/user_details", {
+        const res = await fetch(`${API_BASE_URL}/view/user_details`, {
           method: "GET",
           headers: {
             "Content-Type": "application/json",
@@ -97,7 +98,7 @@ const UserDetails = () => {
     if (!token || isTokenExpired(token)) return logoutUser();
     setDeleting(true);
     try {
-      const res = await fetch("/view/delete", {
+      const res = await fetch(`${API_BASE_URL}/view/delete`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -121,7 +122,7 @@ const UserDetails = () => {
     if (!selectedUser) return;
     setUpdating(true);
     try {
-      const res = await fetch("/view/edit_user_details", {
+      const res = await fetch(`${API_BASE_URL}/view/edit_user_details`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -219,7 +220,7 @@ const UserDetails = () => {
 
     setCreating(true);
     try {
-      const res = await fetch("/auth/signup", {
+      const res = await fetch(`${API_BASE_URL}/auth/signup`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

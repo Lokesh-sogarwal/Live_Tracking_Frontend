@@ -5,6 +5,7 @@ import "react-toastify/dist/ReactToastify.css";
 import { FaCamera } from "react-icons/fa";
 import profilePlaceholder from "../../../Assets/male-avatar-boy-face-man-user-9-svgrepo-com.svg";
 import "./editProfile.css";
+import API_BASE_URL from "../../../utils/config";
 
 const EditProfile = () => {
   const navigate = useNavigate();
@@ -27,7 +28,7 @@ const EditProfile = () => {
 
   const fetchProfile = async () => {
     try {
-      const res = await fetch("http://localhost:5001/view/profile", {
+      const res = await fetch(`${API_BASE_URL}/view/profile`, {
         headers: { Authorization: "Bearer " + token },
         credentials: "include",
       });
@@ -74,7 +75,7 @@ const EditProfile = () => {
       form.append("role", user.role);
       if (selectedFile) form.append("profileimg", selectedFile);
 
-      const res = await fetch("http://localhost:5001/auth/profile", {
+      const res = await fetch(`${API_BASE_URL}/auth/profile`, {
         method: "PUT",
         headers: { Authorization: "Bearer " + token },
         body: form,

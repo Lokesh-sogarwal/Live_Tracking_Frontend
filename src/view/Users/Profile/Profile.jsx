@@ -6,6 +6,7 @@ import "react-toastify/dist/ReactToastify.css";
 import profileimg from "../../../Assets/male-avatar-boy-face-man-user-9-svgrepo-com.svg";
 import { faSpinner } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import API_BASE_URL from "../../../utils/config";
 
 const Profile = () => {
   const [user, setUser] = useState({
@@ -48,7 +49,7 @@ const Profile = () => {
     const fetchProfile = async () => {
       setLoading(true);
       try {
-        const res = await fetch("/view/profile", {
+        const res = await fetch(`${API_BASE_URL}/view/profile`, {
           method: "GET",
           headers: {
             "Content-Type": "application/json",
@@ -95,7 +96,7 @@ const Profile = () => {
 
   const handleSave = async () => {
     try {
-      const res = await fetch("/auth/profile", {
+      const res = await fetch(`${API_BASE_URL}/auth/profile`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",

@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 // import "./show_feedback.css";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import API_BASE_URL from "../../../utils/config";
 
 const FeedbacksList = () => {
   const [feedbacks, setFeedbacks] = useState([]);
@@ -11,7 +12,7 @@ const FeedbacksList = () => {
   const fetchFeedbacks = async () => {
     try {
       const token = localStorage.getItem("token");
-      const response = await fetch("http://127.0.0.1:5001/data/get_feedback", {
+      const response = await fetch(`${API_BASE_URL}/data/get_feedback`, {
         headers: { Authorization: `Bearer ${token}` },
       });
 
