@@ -26,7 +26,7 @@
 .content-box {
   flex-grow: 1;
   height: 100%;
-  overflow-y: hidden;
+  overflow-y: auto;
   padding: 0;
   background-color: transparent; /* Let container bg show through or set specific */
   display: flex;
