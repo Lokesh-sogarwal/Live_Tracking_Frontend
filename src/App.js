@@ -1,8 +1,9 @@
 import './App.css';
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
-import LoginSignup from './view/auth/LoginSignup/LoginSignUp';
+import Login from './view/auth/LoginSignup/LoginSignUp';
+import Signup from './view/auth/LoginSignup/Signup';
 import MainContainer from './view/MainContainer/MainContainer';
-// import Landing from './view/auth/LandingPage/Landing'
+import Landing from './view/auth/LandingPage/Landing';
 
 const isLoggedIn = () => !!localStorage.getItem('token');
 
@@ -20,21 +21,31 @@ function App() {
   return (
     <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
       <Routes>
-        {/* <Route
+        <Route
           path="/"
           element={
             <PublicRoute>
               <Landing />
             </PublicRoute>
           }
-        /> */}
+        />
+
         <Route
-        path="/"
-        element={
-          <PublicRoute>
-            <LoginSignup />
-          </PublicRoute>
-        }
+          path="/login"
+          element={
+            <PublicRoute>
+              <Login />
+            </PublicRoute>
+          }
+        />
+
+        <Route
+          path="/signup"
+          element={
+            <PublicRoute>
+              <Signup />
+            </PublicRoute>
+          }
         />
 
         {/* Private routes */}
