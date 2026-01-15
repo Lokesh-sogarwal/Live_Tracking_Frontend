@@ -7,13 +7,15 @@ import { VscFeedback } from "react-icons/vsc";
 import { MdSupportAgent } from "react-icons/md";
 import { IoDocumentSharp } from "react-icons/io5";
 import { FaBusAlt } from "react-icons/fa";
+import { MdAdminPanelSettings } from "react-icons/md";
 
 export const Items = [
     {
         id: 1,
         title: "Dashboard",
         icon: <MdDashboard />,
-        link: "/dashboard"
+        link: "/dashboard",
+        permissionKey: "dashboard"
     },
     // {
     //     id: 2,
@@ -37,21 +39,24 @@ export const Items = [
         id: 7,
         title: "Live Tracking",
         icon: <FaMapMarkedAlt />,
-        link: "/live_tracking"
+        link: "/live_tracking",
+        permissionKey: "live_tracking"
     },
 
     {
         id: 14,
         title: "Chat",
         icon: <FiMessageSquare />,
-        link: "/chat"
+        link: "/chat",
+        permissionKey: "chat"
     },
 
     {
         id: 9,
         title: "Schedule",
         icon: <MdSchedule />,
-        link: "/bus_schedule"
+        link: "/bus_schedule",
+        permissionKey: "bus_schedule"
     },
     // {
     //     id: 6,
@@ -64,26 +69,38 @@ export const Items = [
         id: 10,
         title: "Upload Document",
         icon: <MdOutlineFileUpload />,
-        link: "/upload"
+        link: "/upload",
+        permissionKey: "upload"
     },
     {
         id: 12,
         title: "Uploaded Documents",
         icon: <IoDocumentSharp />,
-        link: "/Uploded_documents"
+        link: "/Uploded_documents",
+        permissionKey: "Uploded_documents"
     },
 
     {
         id: 16,
         title: "Feedbacks & Complaints",
         icon: <VscFeedback />,
-        link: "/Feedbacks"
+        link: "/Feedbacks",
+        permissionKey: "Feedbacks"
     },
     {
         id: 13,
         title: "ChatBot",
         icon: <MdSupportAgent />,
-        link: "/chat_bot"
+        link: "/chat_bot",
+        permissionKey: "chat_bot"
+    },
+    {
+        id: 17,
+        title: "Permissions",
+        icon: <MdAdminPanelSettings />,
+        link: "/permissions",
+        permissionKey: "permissions",
+        onlySuperadmin: true
     },
 
 ]

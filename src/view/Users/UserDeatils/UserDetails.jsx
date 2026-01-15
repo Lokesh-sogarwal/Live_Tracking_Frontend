@@ -12,7 +12,13 @@ import Dropdown from "react-bootstrap/Dropdown";
 import DropdownButton from "react-bootstrap/DropdownButton";
 import API_BASE_URL from "../../../utils/config";
 
-Modal.setAppElement("#root");
+// In tests, the DOM may not contain #root. Guard to avoid crashing Jest.
+if (typeof document !== "undefined") {
+  const rootEl = document.querySelector("#root");
+  if (rootEl) {
+    Modal.setAppElement(rootEl);
+  }
+}
 
 const customStyles = {
   content: {

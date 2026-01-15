@@ -6,6 +6,7 @@ import { io } from "socket.io-client";
 import { jwtDecode } from "jwt-decode";
 import { toast } from "react-toastify";
 import API_BASE_URL from "../../utils/config";
+import PermissionGate from "../../utils/PermissionGate";
 
 const MainContainer = () => {
     // Socket Listener for Notifications
@@ -56,7 +57,18 @@ const MainContainer = () => {
     <Layout>
       <Routes>
         {userRoutes.map((item) => (
-          <Route key={item.id} path={item.path} element={item.element} />
+          <Route
+            key={item.id}
+            path={item.path}
+            element={
+              <PermissionGate
+                permissionKey={item.permissionKey}
+                requireSuperadmin={!!item.requireSuperadmin}
+              >
+                {item.element}
+              </PermissionGate>
+            }
+          />
         ))}
       </Routes>
     </Layout>

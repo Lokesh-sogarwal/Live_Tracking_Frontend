@@ -1,0 +1,61 @@
+.permissions-page {
+  max-width: 900px;
+}
+
+.permissions-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.permissions-controls {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.permissions-controls select {
+  margin-left: 8px;
+  padding: 6px 8px;
+}
+
+.permissions-save {
+  padding: 8px 14px;
+  border: 0;
+  cursor: pointer;
+}
+
+.permissions-table {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.permissions-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 12px 14px;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  border-radius: 10px;
+  background: #fff;
+}
+
+.permissions-feature {
+  font-weight: 500;
+}
+
+.permissions-switch {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.permissions-note {
+  margin-top: 14px;
+  font-size: 0.9rem;
+  opacity: 0.8;
+}

@@ -9,7 +9,13 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import "react-toastify/dist/ReactToastify.css";
 import "react-confirm-alert/src/react-confirm-alert.css";
 
-Modal.setAppElement("#root");
+// In tests, the DOM may not contain #root. Guard to avoid crashing Jest.
+if (typeof document !== "undefined") {
+  const rootEl = document.querySelector("#root");
+  if (rootEl) {
+    Modal.setAppElement(rootEl);
+  }
+}
 
 const customStyles = {
   content: {

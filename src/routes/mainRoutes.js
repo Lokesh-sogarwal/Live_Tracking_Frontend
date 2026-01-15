@@ -23,6 +23,7 @@ import Settings from '../view/Users/Settings/setting';
 import EditProfile from '../view/Users/Settings/editProfile';
 import RegisterBus from '../view/Users/Bus/RegisterBus';
 import Notification from '../view/Users/Notification/Notification';
+import PermissionsPage from '../view/Users/Permissions/Permissions';
 
 
 
@@ -32,12 +33,14 @@ export const userRoutes = [
   {
     id: 1,
     path: "dashboard",   // no leading slash for nested routes
-    element: <Dashboard />
+    element: <Dashboard />,
+    permissionKey: "dashboard"
   },
   {
     id: 2,
     path: "profile",
-    element: <Profile />
+    element: <Profile />,
+    permissionKey: "profile"
   },
 //   {
 //     id: 3,
@@ -47,7 +50,8 @@ export const userRoutes = [
   {
     id: 4,
     path: "users",
-    element: <Userdetails />
+    element: <Userdetails />,
+    permissionKey: "users"
   },
 //   {
 //     id: 5,
@@ -62,7 +66,8 @@ export const userRoutes = [
   {
     id: 7,
     path: "active_users",
-    element: <Active_Users />   // ✅ will render inside Layout
+    element: <Active_Users />,
+    permissionKey: "active_users"   // ✅ will render inside Layout
   },
 //   {
 //     id:13,
@@ -72,31 +77,37 @@ export const userRoutes = [
   {
     id: 14,
     path: "drivers",
-    element: <DriverDetails />
+    element: <DriverDetails />,
+    permissionKey: "drivers"
   },
   {
     id: 15,
     path: "upload",
-    element: <DriverUpload />
+    element: <DriverUpload />,
+    permissionKey: "upload"
   },
   {
     id: 16,
     path: "live_tracking",
-    element: <LiveTracking />
+    element: <LiveTracking />,
+    permissionKey: "live_tracking"
   },
   {
     id: 17,
     path: "create_routes",
-    element: <BusRoute />
+    element: <BusRoute />,
+    permissionKey: "create_routes"
   },{
     id: 18,
     path: "all_routes",
-    element: <AllRoutes />
+    element: <AllRoutes />,
+    permissionKey: "all_routes"
   }
   ,{
     id: 19,
     path: "bus_tracking",
-    element: <BusTracking />
+    element: <BusTracking />,
+    permissionKey: "bus_tracking"
   },
   // {
   //   id: 20,
@@ -106,52 +117,69 @@ export const userRoutes = [
   {
     id: 21,
     path: "bus_schedule",
-    element: <BusSchedule />
+    element: <BusSchedule />,
+    permissionKey: "bus_schedule"
   },
   {
     id: 22,
     path:"Uploded_documents",
-    element:<Uploaded_documents/>
+    element:<Uploaded_documents/>,
+    permissionKey: "Uploded_documents"
   },
   {
     id: 23,
     path:"Feedback",
-    element:<Feedback/>
+    element:<Feedback/>,
+    permissionKey: "Feedback"
   },
   {
     id: 24,
     path:"Feedbacks",
-    element:<ShowFeeback/>
+    element:<ShowFeeback/>,
+    permissionKey: "Feedbacks"
   },
   {
     id: 25,
     path:"chat_bot",
-    element:<ChatBot/>
+    element:<ChatBot/>,
+    permissionKey: "chat_bot"
   },
   {
     id: 26,
     path:"chat",
-    element:<Chat/>
+    element:<Chat/>,
+    permissionKey: "chat"
   },
   {
     id: 27,
     path:"profile_settings",
-    element:<Settings/>
+    element:<Settings/>,
+    permissionKey: "profile_settings"
   },
   {
     id: 28,
     path:"edit_profile",
-    element:<EditProfile/>
+    element:<EditProfile/>,
+    permissionKey: "edit_profile"
   },
   {
     id: 29,
     path:"register_bus",
-    element:<RegisterBus/>
+    element:<RegisterBus/>,
+    permissionKey: "register_bus"
   },
   {
     id: 30,
     path:"notifications",
-    element:<Notification/>
+    element:<Notification/>,
+    permissionKey: "notifications"
+  },
+  {
+    id: 31,
+    path: "permissions",
+    element: <PermissionsPage />,
+    permissionKey: "permissions",
+    requireSuperadmin: true
   }
 ];
 

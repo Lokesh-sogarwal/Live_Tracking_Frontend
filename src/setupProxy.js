@@ -23,7 +23,7 @@ module.exports = function(app) {
 
   // Proxy Data & Bus services to Python Backend (Port 5001)
   app.use(
-    ['/data', '/get_data', '/bus','/get_routes','/user_details','/chat_users','/profile','/notifications', '/chat'], 
+    ['/data', '/get_data', '/bus','/get_routes','/user_details','/chat_users','/profile','/notifications', '/chat','/permissions/matrix'], 
     createProxyMiddleware({
       target: 'http://localhost:5001',
       changeOrigin: true,

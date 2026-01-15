@@ -3,6 +3,8 @@ import CountUp from 'react-countup';
 import './total.css';
 import { useNavigate } from 'react-router-dom';
 import { FaRoute } from "react-icons/fa";
+import API_BASE_URL from "../../../../utils/config";
+
 
 const Total_routes = () => {
     const [totalRoutes, setTotalRoutes] = useState(0);
@@ -11,10 +13,17 @@ const Total_routes = () => {
     useEffect(() => {
         const fetchRoutes = async () => {
             try {
-                const res = await fetch("/bus/get_all_routes");
-                if (res.ok) {
+                const res = await fetch(`${API_BASE_URL}/data/get_routes`, {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        Authorization: "Bearer " + localStorage.getItem("token"),
+                    },
+                    credentials: "include",
+                });
+                  if (res.ok) {
                     const data = await res.json();
-                    setTotalRoutes(data.length); 
+                    setTotalRoutes(data.length);
                 }
             } catch (err) {
                 console.error(err);
@@ -37,10 +46,10 @@ const Total_routes = () => {
 
             <div className="total-card-footer">
                 <div>
-                   <strong>{2}</strong> Completed
+                    <strong>{2}</strong> Completed
                 </div>
                 <div>
-                  <strong>{18}</strong> In-Progress
+                    <strong>{18}</strong> In-Progress
                 </div>
             </div>
         </div>

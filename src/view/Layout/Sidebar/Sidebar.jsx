@@ -6,6 +6,8 @@ import { jwtDecode } from "jwt-decode";
 import io from "socket.io-client";
 import API_BASE_URL from "../../../utils/config";
 import { fetchChatUsers } from "../../../Components/Static/Chatusers";
+import { usePermissions } from "../../../context/PermissionsContext";
+import { legacyAllows, normalizeRole } from "../../../utils/legacyAccess";
 import "./sidebar.css";
 
 const Sidebar = () => {
@@ -17,6 +19,7 @@ const Sidebar = () => {
   const [unreadMessages, setUnreadMessages] = useState(0);
   const [userId, setUserId] = useState(null);
   const socketRef = useRef(null);
+  const { permissions } = usePermissions();
 
   // Update ref for socket callback and reset on chat visit
   useEffect(() => {
@@ -79,63 +82,29 @@ const Sidebar = () => {
     } catch (err) {}
   }
 
+  const normalizedRole = normalizeRole(role);
+
   const handleClick = (item) => {
     navigate(item.link);
   };
 
-  // ✅ Filter items based on role
-  const filterItemsByRole = (items, role) => {
-    if (role === "Superadmin" || role === "Admin") {
-      return items.filter(
-        (item) => item.title !== "Upload Document" && item.title !== "Feedback"
-      );
+  const isExplicit = (key) =>
+    !!(permissions && Object.prototype.hasOwnProperty.call(permissions, key));
+
+  const isAllowed = (item) => {
+    if (item.onlySuperadmin && normalizedRole !== "superadmin") return false;
+
+    if (!item.permissionKey) return true;
+
+    if (isExplicit(item.permissionKey)) {
+      return !!permissions[item.permissionKey];
     }
 
-    if (role === "operator") {
-      return items.filter(
-        (item) =>
-          item.title !== "Active Users" &&
-          item.title !== "Users" &&
-          item.tittle !== "Feedback & Complaints"
-      );
-    }
-
-    if (role === "driver") {
-      return items.filter(
-        (item) =>
-          item.title !== "Active Users" &&
-          item.title !== "Users" &&
-          item.title !== "Create Route" &&
-          item.title !== "Buses" &&
-          item.title !== "Live Tracking" &&
-          item.title !== "Uploaded Documents" &&
-          item.tittle !== "Feedbacks & Complaints"
-      );
-    }
-
-    if (role === "passenger") {
-      return items.filter(
-        (item) =>
-          item.title !== "Active Users" &&
-          item.title !== "Users" &&
-          item.title !== "Create Route" &&
-          item.title !== "Buses" &&
-          item.title !== "Schedule" &&
-          item.title !== "Driver" &&
-          item.title !== "Uploaded Documents" &&
-          item.tittle !== "Feedbacks & Complaints"
-      );
-    }
-
-    // Default: show only login/signup if no role matched
-    return items.filter(
-      (item) => item.title === "Login" || item.title === "Signup"
-    );
+    return legacyAllows(normalizedRole, item.permissionKey);
   };
 
-  // ✅ Apply role-based filtering
   const filteredItems = token
-    ? filterItemsByRole(Items, role)
+    ? Items.filter(isAllowed)
     : Items.filter((item) => item.title === "Login" || item.title === "Signup");
 
   return (
