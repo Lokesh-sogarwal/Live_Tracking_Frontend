@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import io from "socket.io-client";
+import { io } from "socket.io-client";
 import { fetchChatUsers } from "../../Components/Static/Chatusers";
 import "./chat.css";
 import { jwtDecode } from "jwt-decode";
@@ -34,18 +34,40 @@ const Chat = () => {
     const [newMessage, setNewMessage] = useState("");
     const [searchTerm, setSearchTerm] = useState("");
     const messagesEndRef = useRef(null);
+    const messagesContainerRef = useRef(null);
+    const [socketConnected, setSocketConnected] = useState(false);
 
     // Initialize socket only once
     useEffect(() => {
-        socketRef.current = io(API_BASE_URL, { 
-            transports: ["websocket"],
-            withCredentials: true,
-            path: "/socket.io"
+        socketRef.current = io(API_BASE_URL, {
+            path: "/socket.io",
+            withCredentials: false,
+            transports: ["polling", "websocket"],
         });
 
-        socketRef.current.on("connect", () => console.log("Connected to socket server"));
+        socketRef.current.on("connect", () => {
+            setSocketConnected(true);
+            console.log("[chat] socket connected", socketRef.current.id);
+        });
+        socketRef.current.on("disconnect", (reason) => {
+            setSocketConnected(false);
+            console.log("[chat] socket disconnected", reason);
+        });
+        socketRef.current.on("connect_error", (err) => {
+            setSocketConnected(false);
+            console.error("[chat] socket connect_error", err?.message || err);
+        });
+        socketRef.current.on("error", (payload) => {
+            console.error("[chat] server error event", payload);
+        });
 
-        return () => socketRef.current.disconnect();
+        return () => {
+            try {
+                socketRef.current?.disconnect();
+            } catch {
+                // ignore
+            }
+        };
     }, []);
 
     // Load chat users
@@ -128,14 +150,24 @@ const Chat = () => {
         };
     }, [selectedUser, currentUser.id]);
 
-    // Scroll to bottom on new messages
+    // Scroll to bottom on new messages (only if user is near bottom)
     useEffect(() => {
-        messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+        const container = messagesContainerRef.current;
+        if (!container) {
+            messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+            return;
+        }
+
+        const distanceFromBottom = container.scrollHeight - container.scrollTop - container.clientHeight;
+        const isNearBottom = distanceFromBottom < 120;
+        if (isNearBottom) {
+            messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+        }
     }, [messages]);
 
     // Send message
     const handleSend = () => {
-        if (!newMessage.trim() || !selectedUser || !socketRef.current) return;
+        if (!newMessage.trim() || !selectedUser || !socketRef.current || !socketConnected) return;
 
         const messageData = {
             sender_id: currentUser.id,
@@ -143,7 +175,11 @@ const Chat = () => {
             msg: newMessage,
         };
 
-        socketRef.current.emit("send_message", messageData);
+        socketRef.current.emit("send_message", messageData, (ack) => {
+            if (!ack?.ok) {
+                console.error("[chat] send_message rejected", ack);
+            }
+        });
         setNewMessage("");
     };
 
@@ -181,6 +217,16 @@ const Chat = () => {
             setLoadingMessages(false);
         }
     };
+
+    // If user selected before socket finished connecting, re-join room on connect.
+    useEffect(() => {
+        if (!selectedUser || !socketConnected || !socketRef.current) return;
+        socketRef.current.emit("join", {
+            sender_id: currentUser.id,
+            receiver_id: selectedUser.id,
+            username: currentUser.name,
+        });
+    }, [selectedUser, socketConnected, currentUser.id, currentUser.name]);
 // Filter users
     const filteredUsers = users.filter(u => u.name.toLowerCase().includes(searchTerm.toLowerCase()));
 
@@ -193,8 +239,8 @@ const Chat = () => {
 
     // Auto-select user from navigation state
     useEffect(() => {
-        if (location.state?.selectedUserId && users.length > 0) {
-            const targetUserId = location.state.selectedUserId;
+        const targetUserId = location.state?.selectedUserId;
+        if (targetUserId && users.length > 0) {
             // Only select if not already selected
             if (!selectedUser || selectedUser.id !== targetUserId) {
                 const targetUser = users.find(u => u.id === targetUserId);
@@ -205,7 +251,7 @@ const Chat = () => {
                 }
             }
         }
-    }, [users, location.state, selectedUser]);
+    }, [users, location.state?.selectedUserId, selectedUser, handleSelectUser, navigate, location.pathname]);
     
     // Restrict Reload
     useEffect(() => {
@@ -229,41 +275,45 @@ const Chat = () => {
                         onChange={(e) => setSearchTerm(e.target.value)}
                     />
                 </div>
-                {loadingUsers ? (
-                    <p>Loading users...</p>
-                ) : filteredUsers.length === 0 ? (
-                    <p>No users found</p>
-                ) : (
-                    filteredUsers.map((user) => (
-                        <div
-                            key={user.id}
-                            className={`User ${selectedUser?.id === user.id ? "active" : ""}`}
-                            onClick={() => handleSelectUser(user)}
-                        >
-                            <img src={user.image} alt={user.name} className="UserImage" />
-                            <div className="UserInfo">
-                                <div className="UserMainInfo">
-                                    <span className="UserName">{user.name}</span>
-                                    <span className="UserSubtitle">
-                                        {user.lastMessage 
-                                            ? (user.lastMessage.length > 25 ? user.lastMessage.substring(0, 25) + "..." : user.lastMessage)
-                                            : "Tap to chat"}
-                                    </span>
-                                </div>
-                                <div className="UserMeta">
-                                    {user.unreadCount > 0 ? (
-                                        <>
-                                            <span className="UnreadBadge">{user.unreadCount}</span>
-                                            <span className="UserTimeBadge">{getFormattedTime(user.lastMessageTime)}</span>
-                                        </>
-                                    ) : (
-                                        <span className="UserTime">{getFormattedTime(user.lastMessageTime)}</span>
-                                    )}
+                <div className="UsersScroll">
+                    {loadingUsers ? (
+                        <p>Loading users...</p>
+                    ) : filteredUsers.length === 0 ? (
+                        <p>No users found</p>
+                    ) : (
+                        filteredUsers.map((user) => (
+                            <div
+                                key={user.id}
+                                className={`User ${selectedUser?.id === user.id ? "active" : ""}`}
+                                onClick={() => handleSelectUser(user)}
+                            >
+                                <img src={user.image} alt={user.name} className="UserImage" />
+                                <div className="UserInfo">
+                                    <div className="UserMainInfo">
+                                        <span className="UserName">{user.name}</span>
+                                        <span className="UserSubtitle">
+                                            {user.lastMessage
+                                                ? (user.lastMessage.length > 25
+                                                    ? user.lastMessage.substring(0, 25) + "..."
+                                                    : user.lastMessage)
+                                                : "Tap to chat"}
+                                        </span>
+                                    </div>
+                                    <div className="UserMeta">
+                                        {user.unreadCount > 0 ? (
+                                            <>
+                                                <span className="UnreadBadge">{user.unreadCount}</span>
+                                                <span className="UserTimeBadge">{getFormattedTime(user.lastMessageTime)}</span>
+                                            </>
+                                        ) : (
+                                            <span className="UserTime">{getFormattedTime(user.lastMessageTime)}</span>
+                                        )}
+                                    </div>
                                 </div>
                             </div>
-                        </div>
-                    ))
-                )}
+                        ))
+                    )}
+                </div>
             </div>
 
             <div className="Chating-box">
@@ -275,7 +325,7 @@ const Chat = () => {
                                 {selectedUser.name}
                             </p>
                         </div>
-                        <div className="Messages">
+                        <div className="Messages" ref={messagesContainerRef}>
                             {loadingMessages ? (
                                 <p>Loading messages...</p>
                             ) : messages.length === 0 ? (
@@ -310,9 +360,11 @@ const Chat = () => {
                                 placeholder="Type a message..."
                                 value={newMessage}
                                 onChange={(e) => setNewMessage(e.target.value)}
-                                onKeyPress={(e) => e.key === "Enter" && handleSend()}
+                                onKeyDown={(e) => e.key === "Enter" && handleSend()}
                             />
-                            <button onClick={handleSend}>Send</button>
+                            <button onClick={handleSend} disabled={!socketConnected || !selectedUser || !newMessage.trim()}>
+                                Send
+                            </button>
                         </div>
                     </>
                 ) : (

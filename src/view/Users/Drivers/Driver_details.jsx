@@ -29,6 +29,8 @@ const customStyles = {
   },
 };
 
+import API_BASE_URL from "../../utils/config";
+
 const DriverDetails = () => {
   const [users, setUsers] = useState([]);
   const [error, setError] = useState("");
@@ -85,7 +87,7 @@ const DriverDetails = () => {
     const fetchUsers = async () => {
       setLoading(true);
       try {
-        const res = await fetch("/view/driver_details", {
+        const res = await fetch(`${API_BASE_URL}/view/driver_details`, {
           method: "GET",
           headers: {
             "Content-Type": "application/json",
@@ -110,7 +112,7 @@ const DriverDetails = () => {
     if (!token || isTokenExpired(token)) return logoutUser();
     setDeleting(true);
     try {
-      const res = await fetch("/view/delete", {
+      const res = await fetch(`${API_BASE_URL}/view/delete`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -134,7 +136,7 @@ const DriverDetails = () => {
     if (!selectedUser) return;
     setUpdating(true);
     try {
-      const res = await fetch("/view/edit_user_details", {
+      const res = await fetch(`${API_BASE_URL}/view/edit_user_details`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -249,7 +251,7 @@ const DriverDetails = () => {
       formData.append("expiry_date", expiry_date);
 
       const res = await fetch(
-        `/view/upload/${selectedUser.user_uuid}`,
+        `${API_BASE_URL}/view/upload/${selectedUser.user_uuid}`,
         {
           method: "POST",
           headers: { Authorization: "Bearer " + token },
@@ -283,7 +285,7 @@ const DriverDetails = () => {
 
     setCreating(true);
     try {
-      const res = await fetch("/auth/signup", {
+      const res = await fetch(`${API_BASE_URL}/auth/signup`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

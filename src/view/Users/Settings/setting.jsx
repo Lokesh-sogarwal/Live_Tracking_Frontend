@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import API_BASE_URL from '../../../utils/config';
 import { useNavigate } from "react-router-dom";
 import { Settings } from "../../../Components/Static/setting";
 import "./setting.css";
@@ -15,7 +16,7 @@ const Setting = () => {
 
     const fetchUserData = async () => {
         try {
-            const res = await fetch("/data/get_data", {
+            const res = await fetch(`${API_BASE_URL}/data/get_data`, {
                 method: "GET",
                 headers: {
                     "Content-Type": "application/json",

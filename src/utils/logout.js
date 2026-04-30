@@ -1,8 +1,10 @@
+import API_BASE_URL from "../utils/config";
+
 export const Logout = async (token) => {
   if (!token) return;
 
   try {
-    const res = await fetch("/auth/logout", {
+    const res = await fetch(`${API_BASE_URL}/auth/logout`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",

@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import API_BASE_URL from '../../../../utils/config';
 import CountUp from 'react-countup';
 import './total.css';
 import { useNavigate } from 'react-router-dom';
@@ -11,7 +12,7 @@ const Allbuses = () => {
     useEffect(() => {
         const fetchBuses = async () => {
             try {
-                const res = await fetch("/bus/get_all_buses");
+                const res = await fetch(`${API_BASE_URL}/bus/get_all_buses`);
                 const data = await res.json();
                 setTotalBuses(data.length);
             } catch (err) {}

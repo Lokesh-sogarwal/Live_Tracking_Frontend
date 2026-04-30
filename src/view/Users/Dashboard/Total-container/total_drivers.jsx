@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import API_BASE_URL from '../../../../utils/config';
 import CountUp from 'react-countup';
 import './total.css';
 import { useNavigate } from 'react-router-dom';
@@ -11,9 +12,9 @@ const Total_Drivers = () => {
   useEffect(() => {
     async function fetchData() {
       try {
-        const res = await fetch("/data/get_data", {
-           headers: { Authorization: "Bearer " + localStorage.getItem("token") }
-        });
+          const res = await fetch(`${API_BASE_URL}/data/get_data`, {
+            headers: { Authorization: "Bearer " + localStorage.getItem("token") }
+          });
         const data = await res.json();
         setTotalDrivers(data.total_drivers || 0);
       } catch (err) { }

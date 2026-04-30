@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import API_BASE_URL from '../../../utils/config';
 import { useNavigate } from 'react-router-dom';
 import { toast, ToastContainer } from 'react-toastify';
 import './otp.css';
@@ -21,7 +22,7 @@ const Otp = () => {
     }
 
     try {
-      const response = await fetch("/auth/verify_otp", {
+      const response = await fetch(`${API_BASE_URL}/auth/verify_otp`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

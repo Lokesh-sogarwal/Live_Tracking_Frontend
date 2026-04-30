@@ -23,8 +23,16 @@
   flex-direction: column;
   padding: 0;
   overflow: hidden;
+  min-height: 0; /* allow inner flex child to scroll */
   transition: transform 0.3s ease;
   background-color: white;
+}
+
+/* Scrollable users list (below sticky search) */
+.UsersScroll {
+  flex: 1;
+  overflow-y: auto;
+  min-height: 0;
 }
 
 .search-bar-container {
@@ -186,6 +194,7 @@
   padding: 0;
   overflow: hidden;
   position: relative;
+  min-height: 0; /* allow Messages to scroll */
 }
 
 /* Chat Header */
@@ -219,6 +228,7 @@
   display: flex;
   flex-direction: column; /* This is critical for align-self to work */
   gap: 12px;
+  min-height: 0;
 }
 
 /* No user selected placeholder */
@@ -379,6 +389,13 @@
     transform: translateY(0);
 }
 
+.Input button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
 
 /* Removed duplicate/old styles below */
 .Chating-box h3 .UserImage {
@@ -389,18 +406,18 @@
 /* Ends of file clean up */
 
 /* Scrollbar styling */
-.UsersList::-webkit-scrollbar,
+.UsersScroll::-webkit-scrollbar,
 .Messages::-webkit-scrollbar {
   width: 6px;
 }
 
-.UsersList::-webkit-scrollbar-thumb,
+.UsersScroll::-webkit-scrollbar-thumb,
 .Messages::-webkit-scrollbar-thumb {
   background-color: #bbb;
   border-radius: 3px;
 }
 
-.UsersList::-webkit-scrollbar-thumb:hover,
+.UsersScroll::-webkit-scrollbar-thumb:hover,
 .Messages::-webkit-scrollbar-thumb:hover {
   background-color: #888;
 }

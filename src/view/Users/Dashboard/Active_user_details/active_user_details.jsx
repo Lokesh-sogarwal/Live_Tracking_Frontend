@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import API_BASE_URL from '../../../../utils/config';
 import './a_user.css';
 import myimage from '../../../../Assets/male-avatar-boy-face-man-user-9-svgrepo-com.svg';
 
@@ -9,7 +10,7 @@ const UsersList = () => {
   useEffect(() => {
     async function fetchData() {
       try {
-        const res = await fetch("/auth/get_data", {
+        const res = await fetch(`${API_BASE_URL}/auth/get_data`, {
           method: "GET",
           headers: {
             "Content-Type": "application/json",
