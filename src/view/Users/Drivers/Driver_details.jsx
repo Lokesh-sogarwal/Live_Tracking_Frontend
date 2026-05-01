@@ -8,6 +8,7 @@ import { faSpinner, faEllipsisV } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import "react-toastify/dist/ReactToastify.css";
 import "react-confirm-alert/src/react-confirm-alert.css";
+import API_BASE_URL from "../../../utils/config";
 
 // In tests, the DOM may not contain #root. Guard to avoid crashing Jest.
 if (typeof document !== "undefined") {
@@ -29,7 +30,6 @@ const customStyles = {
   },
 };
 
-import API_BASE_URL from "../../utils/config";
 
 const DriverDetails = () => {
   const [users, setUsers] = useState([]);

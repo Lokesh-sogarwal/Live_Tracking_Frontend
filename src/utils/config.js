@@ -4,9 +4,10 @@
 // and 'production' when building.
 // But Vercel can also set custom env vars.
 
-// Use Vite environment variable `VITE_API_URL` in production
-// Falls back to current origin for local development
-const API_BASE_URL = import.meta.env.VITE_API_URL || window.location.origin;
+// Create React App (CRA) uses process.env.REACT_APP_* variables
+// For production, set REACT_APP_API_URL in .env file or Vercel environment variables
+// For local dev, falls back to current origin (same-origin requests via setupProxy.js)
+const API_BASE_URL = process.env.REACT_APP_API_URL || window.location.origin;
 
 console.log("API Base URL:", API_BASE_URL);
 
