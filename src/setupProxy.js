@@ -5,7 +5,7 @@ module.exports = function(app) {
   app.use(
     ['/view', '/auth', '/api', '/billing'], 
     createProxyMiddleware({
-      target: 'http://localhost:5001',
+      target: 'https://live-tracking-backend-057p.onrender.com',
       changeOrigin: true,
     })
   );
@@ -14,7 +14,7 @@ module.exports = function(app) {
   app.use(
     '/socket.io',
     createProxyMiddleware({
-      target: 'http://localhost:5001',
+      target: 'https://live-tracking-backend-057p.onrender.com',
       changeOrigin: true,
       ws: true,
     })
@@ -25,7 +25,7 @@ module.exports = function(app) {
   app.use(
     ['/data', '/get_data', '/bus','/get_routes','/user_details','/chat_users','/profile','/notifications', '/chat','/permissions/matrix'], 
     createProxyMiddleware({
-      target: 'http://localhost:5001',
+      target: 'https://live-tracking-backend-057p.onrender.com',
       changeOrigin: true,
     })
   );
