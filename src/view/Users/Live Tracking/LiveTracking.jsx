@@ -1,12 +1,13 @@
 import React, { useEffect, useState, useRef } from "react";
-import { useNavigate } from "react-router-dom";
-import { ToastContainer, toast } from "react-toastify";
-import "react-toastify/dist/ReactToastify.css";
+import { useNavigate, useSearchParams } from "react-router-dom";
+import { toast } from "react-toastify";
 // import busImg from "../../../Assets/bus.png"; // Removing specific image to rely on cleaner CSS
 
 import "./LiveTracking.css";
+import LiveFleet from "./LiveFleet";
 
-const LiveTracking = () => {
+// Route search (unchanged behaviour): from/to -> All Routes -> Bus Tracking.
+const RouteSearch = () => {
   const navigate = useNavigate();
   const startInputRef = useRef(null);
   const destInputRef = useRef(null);
@@ -136,7 +137,7 @@ const LiveTracking = () => {
       <div className="search-card">
         <div className="card-header">
            <h1>Start Your Journey</h1>
-           <p>Track buses in real-time with RouteMaster</p>
+           <p>Find a route and follow its buses on the live map</p>
         </div>
         
         <div className="inputs-container">
@@ -201,7 +202,41 @@ const LiveTracking = () => {
           Find Bus Routes
         </button>
       </div>
-      <ToastContainer position="top-center" theme="colored" />
+    </div>
+  );
+};
+
+// Live Tracking page: the fleet map, and the existing route search, as tabs. The tab is kept
+// in the URL so Back from All Routes returns to the search.
+const TABS = [
+  { id: "fleet", label: "Live fleet" },
+  { id: "search", label: "Find a route" },
+];
+
+const LiveTracking = () => {
+  const [params, setParams] = useSearchParams();
+  const view = params.get("view") === "search" ? "search" : "fleet";
+  return (
+    <div className="lt-page">
+      <div className="lt-tabs" role="tablist" aria-label="Live tracking views">
+        {TABS.map((t) => (
+          <button
+            key={t.id}
+            type="button"
+            role="tab"
+            id={`lt-tab-${t.id}`}
+            aria-selected={view === t.id}
+            aria-controls={`lt-panel-${t.id}`}
+            className={`lt-tab ${view === t.id ? "active" : ""}`}
+            onClick={() => setParams(t.id === "fleet" ? {} : { view: t.id }, { replace: true })}
+          >
+            {t.label}
+          </button>
+        ))}
+      </div>
+      <div role="tabpanel" id={`lt-panel-${view}`} aria-labelledby={`lt-tab-${view}`}>
+        {view === "fleet" ? <LiveFleet /> : <RouteSearch />}
+      </div>
     </div>
   );
 };

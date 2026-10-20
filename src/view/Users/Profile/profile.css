@@ -1,259 +1,31 @@
-/* ===== Layout Wrapper ===== */
-.layout {
-  display: flex;
-  font-family: 'Poppins', sans-serif;
-  align-items: stretch; /* Stretch to match heights if needed */
-  position: relative;
-  z-index: 10;
-  background-color: transparent !important;
-  gap: 30px; /* More breathing room */
-  animation: firstName 0.8s cubic-bezier(0.2, 0.8, 0.2, 1);
-  padding: 20px;
-}
-
-@keyframes firstName { /* Renaming animation to something generic but custom */
-  from { opacity: 0; transform: translateY(30px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-
-/* ===== Background Image ===== */
-.background img {
-  width: 100%;
-  height: 100vh;
-  object-fit: cover;
-  position: fixed;
-  top: 0;
-  left: 0;
-  z-index: -10;
-  opacity: 0.25;
-}
-
-/* ===== Profile Main Container (Details Side) ===== */
-.profileContainer {
-  flex: 3; /* Give more width to details */
-  display: flex;
-  flex-direction: column;
-  padding: 0;
-  z-index: 5;
-}
-
-/* ===== Profile Card (Details) ===== */
-.details {
-  background: rgba(255, 255, 255, 0.95); /* High opacity for readability */
-  padding: 40px;
-  border-radius: 24px;
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.06); /* Soft, distinct shadow */
-  width: 88%;
-  border: 1px solid white;
-  backdrop-filter: blur(10px);
-}
-
-/* ===== Title ===== */
-.details h2 {
-  text-align: left;
-  margin-bottom: 30px;
-  color: #1a1a1a;
-  font-size: 1.75rem;
-  font-weight: 700;
-  border-bottom: 2px solid #f0f2f5;
-  padding-bottom: 15px;
+/* Profile, Settings and Edit Profile share these. Primitives: src/styles/components.css */
+.profile-summary {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: var(--space-4);
+  padding-bottom: var(--space-4);
+  margin-bottom: var(--space-4);
+  border-bottom: 1px solid var(--color-border);
 }
-
-.details h2::before {
-    content: '';
-    display: block;
-    width: 6px;
-    height: 24px;
-    background: #007bff;
-    border-radius: 4px;
-}
-
-/* ===== Profile Text Fields Grid ===== */
-.user_details {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); /* Two columns effectively */
-    gap: 20px;
-}
-
-/* Specific styling for p tags becoming cards */
-.user_details p {
-  margin: 0;
-  font-size: 0.9rem;
-  color: #777;
-  display: flex;
-  flex-direction: column;
-  background-color: white;
-  padding: 16px 20px;
-  border-radius: 16px;
-  border: 1px solid #eef0f5;
-  box-shadow: 0 4px 10px rgba(0,0,0,0.02);
-  transition: all 0.3s ease;
-}
-
-.user_details p:hover {
-  transform: translateY(-3px);
-  box-shadow: 0 8px 20px rgba(0,0,0,0.06);
-  border-color: #007bff;
-}
-
-.user_details span {
-  font-weight: 600;
-  color: #333;
-  margin-top: 8px;
-  font-size: 1.1rem;
-  background: transparent;
-  padding: 0;
-}
-
-/* Input Fields inside the grid */
-.user_details input {
-  margin-top: 8px;
-  width: 100%;
-  padding: 12px;
-  border: 1px solid #e0e0e0;
-  border-radius: 10px;
-  font-size: 1rem;
-  outline: none;
-  background-color: #f9f9f9;
-  transition: all 0.2s ease;
-}
-
-.user_details input:focus {
-  border-color: #007bff;
-  background-color: white;
-  box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.15);
-}
-
-/* Buttons Area */
-.buttons, .modal-buttons {
-  display: flex;
-  justify-content: flex-start;
-  gap: 16px;
-  margin-top: 32px;
-  width: 100%;
-  grid-column: 1 / -1; /* Make buttons span full width */
-  border-top: 1px solid #f0f2f5;
-  padding-top: 24px;
-}
-
-.buttons button {
-  padding: 12px 30px;
-  background: #007bff;
-  color: white;
-  border: none;
-  border-radius: 12px;
-  font-size: 1rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  box-shadow: 0 4px 12px rgba(0, 123, 255, 0.25);
-}
-
-.buttons button:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 16px rgba(0, 123, 255, 0.35);
-  background: #0069d9;
-}
-
-.buttons button:last-child {
-  background: white;
-  color: #555;
-  border: 1px solid #ddd;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.05); /* Softer shadow for secondary btn */
-}
-
-.buttons button:last-child:hover {
-    background: #f8f9fa;
-    color: #333;
-    border-color: #ccc;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-}
-
-/* ===== Profile Image Card (Left Side) ===== */
-.profile-image {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
-  background: white;
-  border-radius: 24px;
-  padding: 40px 20px;
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.06);
-  border: 1px solid white;
-  max-height: 500px; /* Don't let it grow infinitely */
-  position: sticky;
-  top: 20px; /* Sticky effect on scroll */
-}
-
-.profile-image img {
-  width: 180px;
-  height: 180px;
+.profile-avatar {
+  flex-shrink: 0;
+  width: 72px;
+  height: 72px;
   border-radius: 50%;
   object-fit: cover;
-  margin-bottom: 24px;
-  box-shadow: 0 10px 25px rgba(0,123,255,0.2);
-  border: 6px solid #f0f7ff;
-  transition: transform 0.4s ease;
+  background: var(--color-accent-soft);
+  border: 3px solid var(--color-accent-soft);
 }
-
-.profile-image:hover img {
-    transform: scale(1.05) rotate(3deg);
+.profile-name {
+  margin: 0 0 var(--space-1);
+  font-size: var(--text-lg, 1.125rem);
+  font-weight: 600;
+  color: var(--color-text);
+  overflow-wrap: anywhere;
 }
-
-.profile-image p {
-    font-size: 1.4rem;
-    font-weight: 700;
-    margin: 0;
-    color: #333;
-    text-align: center;
+.profile-sub {
+  margin: 0 0 var(--space-1);
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+  overflow-wrap: anywhere;
 }
-
-/* Decor bar */
-.active_box {
-    width: 60px;
-    height: 6px;
-    background: #007bff;
-    border-radius: 20px;
-    margin-top: 16px;
-    opacity: 0.8;
-}
-
-/* ===== Responsive Fix ===== */
-@media (max-width: 992px) {
-  .layout {
-    flex-direction: column-reverse; /* Stack image on top usually, check preference */
-    align-items: stretch;
-  }
-
-  .profileContainer, .profile-image {
-    width: 100%;
-    max-width: none;
-    margin: 0;
-  }
-  
-  .profile-image {
-      margin-bottom: 20px;
-  }
-
-  .details {
-    width: 100%;
-    padding: 22px;
-  }
-}
-
-@media (max-width: 480px) {
-  .layout {
-    padding: 14px;
-    gap: 18px;
-  }
-
-  .details {
-    padding: 16px;
-    border-radius: 18px;
-  }
-}
-

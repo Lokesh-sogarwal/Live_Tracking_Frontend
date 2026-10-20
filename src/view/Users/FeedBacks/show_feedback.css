@@ -1,32 +1,17 @@
-.feedback-page {
-  padding: 20px;
-  font-family: Arial, sans-serif;
-}
+/* Staff feedback inbox and detail. */
+.fb-filters .ui-select { min-width: 130px; }
+.fb-date { width: auto; min-width: 140px; }
+.fb-high td:first-child { box-shadow: inset 3px 0 0 var(--brand-rose); }
 
-.feedback-title {
-  text-align: center;
-  margin-bottom: 20px;
-}
+.fb-detail { display: grid; grid-template-columns: minmax(0, 1fr) 320px; gap: var(--space-5); align-items: start; }
+.fb-detail-main, .fb-detail-side { display: grid; gap: var(--space-5); min-width: 0; }
+.fb-reply-actions { justify-content: space-between; align-items: center; flex-wrap: wrap; }
+.fb-check { display: inline-flex; align-items: center; gap: 8px; font-size: var(--text-sm); }
+.fb-controls { margin-top: var(--space-4); }
+.fb-history { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--space-3); font-size: var(--text-sm); }
+.fb-history li { display: grid; gap: 2px; }
+.fb-history time { font-size: var(--text-xs); color: var(--color-text-muted); }
 
-.feedbacks-table {
-  width: 100%;
-  border-collapse: collapse;
-}
-
-.feedbacks-table th,
-.feedbacks-table td {
-  border: 1px solid #ddd;
-  padding: 10px;
-  text-align: left;
-}
-
-.feedbacks-table th {
-  background-color: #f4f4f4;
-}
-
-.loading-text,
-.no-feedback {
-  text-align: center;
-  margin-top: 20px;
-  font-size: 16px;
+@media (max-width: 1000px) {
+  .fb-detail { grid-template-columns: minmax(0, 1fr); }
 }

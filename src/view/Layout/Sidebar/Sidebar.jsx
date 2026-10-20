@@ -1,136 +1,145 @@
 import React, { useState, useEffect, useRef } from "react";
-import { Items } from "../../../Components/Static/SideItems";
-import Sidebar_header from "./Header/Sidebar_header";
-import { useNavigate, useLocation } from "react-router-dom";
+import { NavLink, useLocation } from "react-router-dom";
 import { jwtDecode } from "jwt-decode";
 import io from "socket.io-client";
+import { FiLogOut, FiChevronsLeft, FiChevronsRight } from "react-icons/fi";
+import { NAV_SECTIONS } from "../../../Components/Static/SideItems";
+import SidebarHeader from "./Header/Sidebar_header";
 import API_BASE_URL from "../../../utils/config";
 import { fetchChatUsers } from "../../../Components/Static/Chatusers";
 import { usePermissions } from "../../../context/PermissionsContext";
-import { legacyAllows, normalizeRole } from "../../../utils/legacyAccess";
+import { allowed } from "../../../utils/access";
+import { Logout } from "../../../utils/logout";
 import "./sidebar.css";
 
-const Sidebar = () => {
+const Sidebar = ({ collapsed = false, onToggleCollapsed }) => {
   const token = localStorage.getItem("token");
-  const navigate = useNavigate();
   const location = useLocation();
   const locationRef = useRef(location);
+  const { can, role, ready } = usePermissions();
 
   const [unreadMessages, setUnreadMessages] = useState(0);
   const [userId, setUserId] = useState(null);
   const socketRef = useRef(null);
-  const { can } = usePermissions();
 
   // Update ref for socket callback and reset on chat visit
   useEffect(() => {
     locationRef.current = location;
-    if (location.pathname === '/chat') {
-        setUnreadMessages(0);
+    if (location.pathname === "/chat") {
+      setUnreadMessages(0);
     }
   }, [location]);
 
-  // Decode and set user ID, load initial count
+  // Decode user id and load the initial unread count
   useEffect(() => {
-    if (token) {
-      try {
-        const decoded = jwtDecode(token);
-        setUserId(decoded.user_id);
-
-        // Fetch initial unread count
-        fetchChatUsers().then(users => {
-             const totalUnread = users.reduce((acc, user) => acc + (user.unreadCount || 0), 0);
-             if (location.pathname !== '/chat') {
-                 setUnreadMessages(totalUnread);
-             }
-        });
-
-      } catch (err) {
-        console.error("Invalid token:", err);
-      }
-    }
-  }, [token]);
-  
-  // Socket Listener
-  useEffect(() => {
-      if (!userId) return;
-
-      socketRef.current = io(API_BASE_URL, {
-        transports: ["websocket"],
-        withCredentials: true,
-        path: "/socket.io"
-      });
-
-      socketRef.current.on("message", (msg) => {
-          if (msg.receiver_id === userId) {
-               if (locationRef.current.pathname !== '/chat') {
-                   setUnreadMessages(prev => prev + 1);
-               }
-          }
-      });
-
-      return () => {
-          if (socketRef.current) socketRef.current.disconnect();
-      };
-  }, [userId]);
-
-  // ✅ Decode token to get user role (Sync for render filter)
-  let role = "";
-  if (token) {
+    if (!token) return;
     try {
       const decoded = jwtDecode(token);
-      role = decoded.role || "";
-    } catch (err) {}
-  }
+      setUserId(decoded.user_id);
+      fetchChatUsers().then((users) => {
+        const totalUnread = users.reduce((acc, user) => acc + (user.unreadCount || 0), 0);
+        if (locationRef.current.pathname !== "/chat") setUnreadMessages(totalUnread);
+      });
+    } catch (err) {
+      console.error("Invalid token:", err);
+    }
+  }, [token]);
 
-  const normalizedRole = normalizeRole(role);
+  // Live unread badge: the server also delivers chat messages to the receiver's personal room.
+  useEffect(() => {
+    if (!userId) return undefined;
+    socketRef.current = io(API_BASE_URL, {
+      transports: ["websocket"],
+      withCredentials: true,
+      path: "/socket.io",
+      auth: { token: localStorage.getItem("token") },
+    });
+    socketRef.current.on("message", (msg) => {
+      if (msg.receiver_id === userId && locationRef.current.pathname !== "/chat") {
+        setUnreadMessages((prev) => prev + 1);
+      }
+    });
+    return () => socketRef.current?.disconnect();
+  }, [userId]);
 
-  const handleClick = (item) => {
-    navigate(item.link);
-  };
-
-  const isAllowed = (item) => {
-    if (item.onlySuperadmin && normalizedRole !== "superadmin") return false;
-
-    if (!item.permissionKey) return true;
-
-    // Superadmin bypass lives in can().
-    return can(item.permissionKey);
-  };
-
-  const filteredItems = token
-    ? Items.filter(isAllowed)
-    : Items.filter((item) => item.title === "Login" || item.title === "Signup");
+  // Until permissions are known, render no gated items (avoids showing then hiding them).
+  const sections = ready
+    ? NAV_SECTIONS.map((s) => ({ ...s, items: s.items.filter((item) => allowed(item.rule, can, role)) })).filter(
+        (s) => s.items.length > 0
+      )
+    : [];
 
   return (
-    <div className="sidebar">
-      <div className="header">
-        <Sidebar_header />
+    <div className={`sidebar ${collapsed ? "collapsed" : ""}`}>
+      <div className="sidebar-top">
+        <SidebarHeader collapsed={collapsed} />
+        {onToggleCollapsed && (
+          <button
+            type="button"
+            className="sidebar-collapse-btn"
+            onClick={onToggleCollapsed}
+            aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+            title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+          >
+            {collapsed ? <FiChevronsRight /> : <FiChevronsLeft />}
+          </button>
+        )}
       </div>
 
-      <ul className="sidebar-list">
-        {filteredItems.map((item, index) => {
-            // Check if active. Logic: exact match or partial match (for nested) if needed.
-            // Using exact match or includes for dashboard sub-routes could be refined.
-            const isActive = location.pathname === item.link; 
-            
-            return (
-              <li
-                key={item.id}
-                onClick={() => handleClick(item)}
-                className={`sidebar-item ${item.id === 4 ? "text-danger" : ""}`}
-                style={{ animationDelay: `${index * 0.05}s` }}
-              >
-                <div className={`cont ${isActive ? "active" : ""}`}>
-                  <span>{item.icon}</span>
-                  <span className="sidebar-title">{item.title}</span>
-                  {item.title === "Chat" && unreadMessages > 0 && (
-                      <span className="sidebar-badge">{unreadMessages}</span>
-                  )}
-                </div>
-              </li>
-            );
-        })}
-      </ul>
+      <nav className="sidebar-nav">
+        {!ready && (
+          <div className="sidebar-skeleton" aria-hidden="true">
+            {[0, 1, 2, 3, 4].map((i) => (
+              <span key={i} className="sidebar-skeleton-row" />
+            ))}
+          </div>
+        )}
+        {sections.map((section) => (
+          <div className="sidebar-section" key={section.title}>
+            <p className="sidebar-section-title">{section.title}</p>
+            <ul className="sidebar-list">
+              {section.items.map((item) => {
+                const badge = item.badge === "chat" && unreadMessages > 0 ? unreadMessages : 0;
+                return (
+                  <li key={item.id}>
+                    <NavLink
+                      to={item.link}
+                      className={({ isActive }) => `sidebar-link ${isActive ? "active" : ""}`}
+                      title={collapsed ? item.title : undefined}
+                      aria-label={collapsed ? item.title : undefined}
+                    >
+                      <span className="sidebar-icon" aria-hidden="true">
+                        {item.icon}
+                      </span>
+                      <span className="sidebar-title">{item.title}</span>
+                      {badge > 0 && (
+                        <span className="sidebar-badge" aria-label={`${badge} unread messages`}>
+                          {badge > 99 ? "99+" : badge}
+                        </span>
+                      )}
+                    </NavLink>
+                  </li>
+                );
+              })}
+            </ul>
+          </div>
+        ))}
+      </nav>
+
+      <div className="sidebar-footer">
+        <button
+          type="button"
+          className="sidebar-link sidebar-logout"
+          onClick={() => Logout(token)}
+          title={collapsed ? "Log out" : undefined}
+          aria-label="Log out"
+        >
+          <span className="sidebar-icon" aria-hidden="true">
+            <FiLogOut />
+          </span>
+          <span className="sidebar-title">Log out</span>
+        </button>
+      </div>
     </div>
   );
 };

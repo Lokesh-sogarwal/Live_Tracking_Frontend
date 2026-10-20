@@ -12,9 +12,11 @@ const Allbuses = () => {
     useEffect(() => {
         const fetchBuses = async () => {
             try {
-                const res = await fetch(`${API_BASE_URL}/bus/get_all_buses`);
+                const res = await fetch(`${API_BASE_URL}/bus/get_all_buses`, {
+                    headers: { Authorization: "Bearer " + localStorage.getItem("token") },
+                });
                 const data = await res.json();
-                setTotalBuses(data.length);
+                if (res.ok && Array.isArray(data)) setTotalBuses(data.length);
             } catch (err) {}
         };
         fetchBuses();

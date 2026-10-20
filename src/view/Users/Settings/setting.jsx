@@ -1,104 +1,68 @@
-import React, { useState, useEffect } from "react";
-import API_BASE_URL from '../../../utils/config';
+import React from "react";
 import { useNavigate } from "react-router-dom";
+import { FiChevronRight } from "react-icons/fi";
 import { Settings } from "../../../Components/Static/setting";
+import "../Profile/profile.css";
 import "./setting.css";
 import profileimg from "../../../Assets/male-avatar-boy-face-man-user-9-svgrepo-com.svg";
-import { jwtDecode } from "jwt-decode";
-import { ToastContainer, toast } from "react-toastify";
-import "react-toastify/dist/ReactToastify.css";
+import useResource from "../../../hooks/useResource";
+import { usePermissions } from "../../../context/PermissionsContext";
+import { PageHeader, Panel, RoleBadge } from "../../../Components/ui";
+
+// Menu entries are gated by the same permission as the page they open.
+const ENTRY_PERMISSION = { "/edit_profile": "edit_profile", "/feedback": "Feedback" };
 
 const Setting = () => {
-    const navigate = useNavigate();
-    const token = localStorage.getItem("token");
+  const navigate = useNavigate();
+  const { can } = usePermissions();
+  // The signed-in user's own profile (get_data returned the newest registered user).
+  const res = useResource("/view/profile");
+  const user = res.data || {};
 
-    const [user, setUser] = useState({ fullname: "", email: "", role: "" });
+  const handleClick = (item) => {
+    if (item.action) {
+      item.action(localStorage.getItem("token"));
+      return;
+    }
+    if (item.link) navigate(item.link);
+  };
 
-    const fetchUserData = async () => {
-        try {
-            const res = await fetch(`${API_BASE_URL}/data/get_data`, {
-                method: "GET",
-                headers: {
-                    "Content-Type": "application/json",
-                    Authorization: "Bearer " + token,
-                },
-                credentials: "include",
-            });
+  const items = Settings.filter((item) => !item.link || !ENTRY_PERMISSION[item.link] || can(ENTRY_PERMISSION[item.link]));
 
-            const data = await res.json();
-            if (!res.ok) throw new Error(data.error || "API Error");
-
-            const name = data.users?.[0]?.fullname || "";
-
-            setUser({
-                fullname: name,
-                email: data.users?.[0]?.email || "",
-                role: data.users?.[0]?.role || "",
-            });
-
-        } catch (err) {
-            toast.error("Failed to load profile!");
-        }
-    };
-
-    useEffect(() => {
-        fetchUserData();
-    }, []);
-
-    const handleClick = (item) => {
-        console.log("Clicked on:", item.title);
-
-        // ✅ Run logout if action exists
-        if (item.action) {
-            item.action(token); // ✅ CALL LOGOUT API
-            return;
-        }
-
-        // ✅ Otherwise navigate to path
-        if (item.link) {
-            navigate(item.link);
-        }
-    };
-
-
-    return (
-        <div className="layout"> {/* ✅ left-right layout wrapper */}
-
-            {/* ===== LEFT MENU ===== */}
-            <div className="setting_container">
-                {Settings.map((item) => (
-                    <div
-                        className="setting_item"
-                        key={item.id}
-                        onClick={() => handleClick(item)}
-                        style={item.title === "Logout" ? { color: "red" } : {}}  // ✅ valid conditional style
-                    >
-                        <span className="setting_icon">{item.icon}</span>
-                        <span className="setting_title">{item.title}</span>
-                    </div>
-                ))}
+  return (
+    <div className="ui-page ui-page-narrow">
+      <PageHeader title="Settings" description="Manage your account." />
+      <div className="settings-grid">
+        <Panel status={res.status === "idle" ? "loading" : res.status} onRetry={res.reload}>
+          <div className="profile-summary settings-summary">
+            <img src={profileimg} alt="" className="profile-avatar" />
+            <div>
+              <h2 className="profile-name">{user.fullname || "—"}</h2>
+              {user.email && <p className="profile-sub">{user.email}</p>}
+              {user.role && <RoleBadge role={user.role} />}
             </div>
+          </div>
+        </Panel>
 
-
-            {/* ===== RIGHT PROFILE CARD ===== */}
-            <div className="photo_card">
-                <img src={profileimg} alt="Profile" />
-                <p className="profile-name">{user.fullname || "-"}</p>
-
-                {/* ✅ GitHub Style Active Pill */}
-                <div className="github-active-pill">
-                    <span className="status-dot"></span>
-                    <div className="text-group">
-                        <span className="status-text">Active Now</span>
-                        <span className="status-sub">Online</span>
-                    </div>
-                </div>
-
-            </div>
-
-            <ToastContainer /> {/* Toast support */}
-
-        </div>
-    );
+        <nav className="ui-card settings-menu" aria-label="Account settings">
+          <ul>
+            {items.map((item) => (
+              <li key={item.id}>
+                <button
+                  type="button"
+                  className={`settings-item${item.action ? " is-danger" : ""}`}
+                  onClick={() => handleClick(item)}
+                >
+                  <span className="settings-icon" aria-hidden="true">{item.icon}</span>
+                  <span className="settings-title">{item.title === "Logout" ? "Sign out" : item.title}</span>
+                  {!item.action && <FiChevronRight aria-hidden="true" className="settings-chevron" />}
+                </button>
+              </li>
+            ))}
+          </ul>
+        </nav>
+      </div>
+    </div>
+  );
 };
 export default Setting;

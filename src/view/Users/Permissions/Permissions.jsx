@@ -1,175 +1,224 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
+import { toast } from "react-toastify";
+import { FiSave, FiRotateCcw } from "react-icons/fi";
 import API_BASE_URL from "../../../utils/config";
 import "./permissions.css";
 import { legacyAllows, normalizeRole } from "../../../utils/legacyAccess";
+import { usePermissions } from "../../../context/PermissionsContext";
+import { PageHeader, Panel, ConfirmDialog } from "../../../Components/ui";
 
-const FEATURES = [
-  { key: "dashboard", label: "Dashboard" },
-  { key: "profile", label: "Profile" },
-  { key: "users", label: "Users" },
-  { key: "active_users", label: "Active Users" },
-  { key: "drivers", label: "Drivers" },
-  { key: "upload", label: "Upload Document" },
-  { key: "live_tracking", label: "Live Tracking" },
-  { key: "create_routes", label: "Create Routes" },
-  { key: "all_routes", label: "All Routes" },
-  { key: "bus_tracking", label: "Bus Tracking" },
-  { key: "bus_schedule", label: "Bus Schedule" },
-  { key: "Uploded_documents", label: "Uploaded Documents" },
-  { key: "Feedback", label: "Feedback" },
-  { key: "Feedbacks", label: "Feedbacks" },
-  { key: "chat_bot", label: "ChatBot" },
-  { key: "chat", label: "Chat" },
-  { key: "profile_settings", label: "Profile Settings" },
-  { key: "edit_profile", label: "Edit Profile" },
-  { key: "register_bus", label: "Register Bus" },
-  { key: "notifications", label: "Notifications" },
-  { key: "permissions", label: "Permissions (Superadmin)" },
+const GROUPS = [
+  {
+    title: "General",
+    features: [
+      { key: "dashboard", label: "Dashboard" },
+      { key: "notifications", label: "Notifications" },
+      { key: "profile", label: "Profile" },
+      { key: "profile_settings", label: "Profile settings" },
+      { key: "edit_profile", label: "Edit profile" },
+    ],
+  },
+  {
+    title: "Tracking & schedules",
+    features: [
+      { key: "live_tracking", label: "Live tracking" },
+      { key: "bus_tracking", label: "Bus tracking" },
+      { key: "bus_schedule", label: "Bus schedule" },
+      { key: "all_routes", label: "All routes" },
+    ],
+  },
+  {
+    title: "Fleet & routes",
+    features: [
+      { key: "register_bus", label: "Register bus" },
+      { key: "create_routes", label: "Create routes" },
+    ],
+  },
+  {
+    title: "People",
+    features: [
+      { key: "users", label: "Users" },
+      { key: "active_users", label: "Active users" },
+      { key: "drivers", label: "Drivers" },
+    ],
+  },
+  {
+    title: "Documents",
+    features: [
+      { key: "upload", label: "Upload document" },
+      { key: "Uploded_documents", label: "Review documents" },
+    ],
+  },
+  {
+    title: "Communication",
+    features: [
+      { key: "chat", label: "Chat" },
+      { key: "chat_bot", label: "Assistant (ChatBot)" },
+      { key: "Feedback", label: "Send feedback" },
+      { key: "Feedbacks", label: "Feedback inbox" },
+    ],
+  },
+  { title: "Administration", features: [{ key: "permissions", label: "Permissions (superadmin only on the server)" }] },
 ];
+const FEATURES = GROUPS.flatMap((g) => g.features);
 
 const PermissionsPage = () => {
   const token = localStorage.getItem("token");
-
+  const { refresh, role: myRole } = usePermissions();
+  const [status, setStatus] = useState("loading");
   const [roles, setRoles] = useState([]);
   const [matrix, setMatrix] = useState({});
   const [selectedRole, setSelectedRole] = useState("");
+  const [draft, setDraft] = useState({});
+  const [saving, setSaving] = useState(false);
+  const [pendingRole, setPendingRole] = useState(null); // role switch waiting on "discard changes?"
 
-  // Local edits for the selected role only
-  const [draft, setDraft] = useState({}); // { featureKey: boolean }
-
-  const selectedRolePermissions = useMemo(() => {
+  // Missing keys fall back to legacy defaults.
+  const saved = useMemo(() => {
     const base = matrix[selectedRole] || {};
-
-    // Missing keys fall back to legacy defaults.
     const merged = {};
-    for (const f of FEATURES) {
-      merged[f.key] =
-        base[f.key] === undefined
-          ? legacyAllows(normalizeRole(selectedRole), f.key)
-          : !!base[f.key];
-    }
-
+    for (const f of FEATURES) merged[f.key] = base[f.key] === undefined ? legacyAllows(normalizeRole(selectedRole), f.key) : !!base[f.key];
     return merged;
   }, [matrix, selectedRole]);
 
-  useEffect(() => {
-    const load = async () => {
-      try {
-        const res = await fetch(`${API_BASE_URL}/permissions/matrix`, {
-          method: "GET",
-          headers: {
-            Authorization: "Bearer " + token,
-          },
-          credentials: "include",
-        });
-
-        if (!res.ok) return;
-
-        const data = await res.json();
-        setRoles(data.roles || []);
-        
-        setMatrix(data.matrix || {});
-
-        const firstRole = (data.roles || [])[0] || "";
-        setSelectedRole((prev) => prev || firstRole);
-      } catch (e) {
-        // no-op
+  const load = useCallback(async () => {
+    setStatus("loading");
+    try {
+      const res = await fetch(`${API_BASE_URL}/permissions/matrix`, {
+        headers: { Authorization: "Bearer " + token },
+        credentials: "include",
+      });
+      if (!res.ok) {
+        setStatus(res.status === 403 ? "forbidden" : "error");
+        return;
       }
-    };
-
-    if (token) load();
+      const data = await res.json();
+      setRoles(data.roles || []);
+      setMatrix(data.matrix || {});
+      setSelectedRole((prev) => prev || (data.roles || [])[0] || "");
+      setStatus("ok");
+    } catch {
+      setStatus("error");
+    }
   }, [token]);
 
   useEffect(() => {
-    if (!selectedRole) return;
-    setDraft(selectedRolePermissions);
-  }, [selectedRole, selectedRolePermissions]);
+    if (token) load();
+  }, [token, load]);
 
-  const toggle = (featureKey) => {
-    setDraft((prev) => ({
-      ...prev,
-      [featureKey]: !prev[featureKey],
-    }));
-  };
+  useEffect(() => {
+    setDraft(saved);
+  }, [saved]);
+
+  const changed = FEATURES.filter((f) => draft[f.key] !== saved[f.key]);
+  const dirty = changed.length > 0;
+
+  const chooseRole = (r) => (dirty ? setPendingRole(r) : setSelectedRole(r));
 
   const save = async () => {
-    if (!selectedRole) return;
-
-    const updates = FEATURES.map((f) => ({
-      role_name: selectedRole,
-      feature_key: f.key,
-      allowed: !!draft[f.key],
-    }));
-
-    const res = await fetch(`${API_BASE_URL}/permissions/matrix`, {
-      method: "PUT",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: "Bearer " + token,
-      },
-      credentials: "include",
-      body: JSON.stringify({ updates }),
-    });
-
-    if (!res.ok) return;
-
-    // Refresh matrix
-    const refreshed = await fetch(`${API_BASE_URL}/permissions/matrix`, {
-      method: "GET",
-      headers: { Authorization: "Bearer " + token },
-      credentials: "include",
-    });
-
-    if (refreshed.ok) {
-      const data = await refreshed.json();
-      setRoles(data.roles || []);
-      setMatrix(data.matrix || {});
+    if (!selectedRole || !dirty) return;
+    setSaving(true);
+    try {
+      // Only the switches that changed are written, so untouched features keep their defaults.
+      const updates = changed.map((f) => ({ role_name: selectedRole, feature_key: f.key, allowed: !!draft[f.key] }));
+      const res = await fetch(`${API_BASE_URL}/permissions/matrix`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json", Authorization: "Bearer " + token },
+        credentials: "include",
+        body: JSON.stringify({ updates }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        toast.error(data.error || "Permissions were not saved");
+        return;
+      }
+      toast.success(`Saved ${data.applied ?? updates.length} change${updates.length === 1 ? "" : "s"} for ${selectedRole}`);
+      await load();
+      if (normalizeRole(selectedRole) === normalizeRole(myRole)) refresh();
+    } catch {
+      toast.error("Could not reach the server. Permissions were not saved.");
+    } finally {
+      setSaving(false);
     }
   };
 
   return (
-    <div className="permissions-page">
-      <div className="permissions-header">
-        <h2>Permissions</h2>
-        <div className="permissions-controls">
-          <label>
-            Role:
-            <select
-              value={selectedRole}
-              onChange={(e) => setSelectedRole(e.target.value)}
-            >
-              {roles.map((r) => (
-                <option key={r} value={r}>
-                  {r}
-                </option>
-              ))}
-            </select>
-          </label>
-          <button className="permissions-save" onClick={save}>
-            Save
-          </button>
-        </div>
-      </div>
+    <div className="ui-page">
+      <PageHeader
+        title="Permissions"
+        description="Choose which features each role can open. The server also enforces role rank, so some features stay restricted even when allowed here."
+        actions={
+          <>
+            <button type="button" className="ui-btn ui-btn-secondary" onClick={() => setDraft(saved)} disabled={!dirty || saving}>
+              <FiRotateCcw aria-hidden="true" /> Discard
+            </button>
+            <button type="button" className="ui-btn ui-btn-primary" onClick={save} disabled={!dirty || saving}>
+              {saving ? <span className="ui-spinner" aria-hidden="true" /> : <FiSave aria-hidden="true" />} {saving ? "Saving…" : "Save changes"}
+            </button>
+          </>
+        }
+      />
 
-      <div className="permissions-table">
-        {FEATURES.map((f) => (
-          <div key={f.key} className="permissions-row">
-            <div className="permissions-feature">{f.label}</div>
-            <label className="permissions-switch">
-              <input
-                type="checkbox"
-                checked={!!draft[f.key]}
-                onChange={() => toggle(f.key)}
-              />
-              <span>Allow</span>
-            </label>
+      {status === "ok" && (
+        <div className="perm-toolbar">
+          <div className="ui-tabs" role="tablist" aria-label="Role">
+            {roles.map((r) => (
+              <button key={r} type="button" role="tab" className="ui-tab" aria-selected={selectedRole === r} onClick={() => chooseRole(r)}>
+                {r}
+              </button>
+            ))}
           </div>
-        ))}
-      </div>
+          <span className={`perm-dirty${dirty ? " is-dirty" : ""}`} role="status">
+            {dirty ? `${changed.length} unsaved change${changed.length === 1 ? "" : "s"}` : "All changes saved"}
+          </span>
+        </div>
+      )}
 
-      <div className="permissions-note">
-        Note: If a permission is not explicitly set, it defaults to allowed.
-      </div>
+      <Panel status={status} onRetry={load} flush={false}>
+        <div className="perm-groups">
+          {GROUPS.map((g) => (
+            <fieldset key={g.title} className="perm-group">
+              <legend className="perm-group-title">{g.title}</legend>
+              {g.features.map((f) => {
+                const id = `perm-${f.key}`;
+                const isChanged = draft[f.key] !== saved[f.key];
+                return (
+                  <div key={f.key} className={`perm-row${isChanged ? " is-changed" : ""}`}>
+                    <label htmlFor={id} className="perm-label">
+                      {f.label}
+                      {isChanged && <span className="perm-changed">Changed</span>}
+                    </label>
+                    <input
+                      id={id}
+                      type="checkbox"
+                      role="switch"
+                      className="perm-switch"
+                      checked={!!draft[f.key]}
+                      aria-checked={!!draft[f.key]}
+                      onChange={() => setDraft((d) => ({ ...d, [f.key]: !d[f.key] }))}
+                      disabled={saving}
+                    />
+                  </div>
+                );
+              })}
+            </fieldset>
+          ))}
+        </div>
+        <p className="ui-hint perm-note">Features without an explicit setting use the role's default access.</p>
+      </Panel>
+
+      <ConfirmDialog
+        open={Boolean(pendingRole)}
+        title="Discard unsaved changes?"
+        message={`You have ${changed.length} unsaved change${changed.length === 1 ? "" : "s"} for ${selectedRole}. Switching to ${pendingRole} discards them.`}
+        confirmLabel="Discard and switch"
+        tone="danger"
+        onConfirm={() => {
+          setSelectedRole(pendingRole);
+          setPendingRole(null);
+        }}
+        onCancel={() => setPendingRole(null)}
+      />
     </div>
   );
 };

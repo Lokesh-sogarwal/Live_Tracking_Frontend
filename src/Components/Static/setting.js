@@ -1,4 +1,4 @@
-import { MdSettings } from "react-icons/md";
+import { MdSettings, MdLockOutline } from "react-icons/md";
 import { VscFeedback } from "react-icons/vsc";
 import { Logout } from "../../utils/logout"; // ✅ correct import
 import { IoIosLogOut } from "react-icons/io";
@@ -9,6 +9,12 @@ export const Settings = [
     title: "Edit Profile",
     icon: <MdSettings />,
     link: "/edit_profile", // ✅ use `path`, not `link`
+  },
+  {
+    id: 3,
+    title: "Change Password",
+    icon: <MdLockOutline />,
+    link: "/change-password",
   },
   {
     id: 2,

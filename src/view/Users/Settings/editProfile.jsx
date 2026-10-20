@@ -1,166 +1,121 @@
-import React, { useState, useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ToastContainer, toast } from "react-toastify";
-import "react-toastify/dist/ReactToastify.css";
-import { FaCamera } from "react-icons/fa";
+import { toast } from "react-toastify";
+import { FiAlertCircle, FiInfo } from "react-icons/fi";
 import profilePlaceholder from "../../../Assets/male-avatar-boy-face-man-user-9-svgrepo-com.svg";
+import "../Profile/profile.css";
 import "./editProfile.css";
 import API_BASE_URL from "../../../utils/config";
+import useResource from "../../../hooks/useResource";
+import { PageHeader, Panel, Field, RoleBadge } from "../../../Components/ui";
+
+const FIELDS = ["fullname", "email", "dob", "fathername", "mothername"];
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 const EditProfile = () => {
   const navigate = useNavigate();
-  const token = localStorage.getItem("token");
-
-  const [user, setUser] = useState({
-    fullname: "",
-    email: "",
-    dob: "",
-    fathername: "",
-    mothername: "",
-    role: "",
-    profileimg: null,
-  });
-
-  const [image, setImage] = useState(profilePlaceholder);
-  const [selectedFile, setSelectedFile] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
-
-  const fetchProfile = async () => {
-    try {
-      const res = await fetch(`${API_BASE_URL}/view/profile`, {
-        headers: { Authorization: "Bearer " + token },
-        credentials: "include",
-      });
-
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error);
-
-      setUser(data);
-      if (data.profileimg) setImage(data.profileimg);
-    } catch (err) {
-      setError(err.message);
-      toast.error(err.message);
-    } finally {
-      setLoading(false);
-    }
-  };
+  const res = useResource("/view/profile");
+  const [form, setForm] = useState(null);
+  const [errors, setErrors] = useState({});
+  const [saving, setSaving] = useState(false);
+  const [serverError, setServerError] = useState("");
 
   useEffect(() => {
-    fetchProfile();
-  }, []);
+    if (res.status === "ok" && !form) setForm(Object.fromEntries(FIELDS.map((k) => [k, res.data?.[k] || ""])));
+  }, [res.status, res.data, form]);
 
-  const handleChange = (e) => {
-    setUser({ ...user, [e.target.name]: e.target.value });
-  };
+  const set = (k) => (e) => setForm((f) => ({ ...f, [k]: e.target.value }));
 
-  const handleImageChange = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      setSelectedFile(file);
-      setImage(URL.createObjectURL(file));
-    }
-  };
+  const handleSave = async (e) => {
+    e.preventDefault();
+    const next = {};
+    if (!form.fullname.trim()) next.fullname = "Full name is required";
+    if (!EMAIL_RE.test(form.email.trim())) next.email = "Enter a valid email address";
+    setErrors(next);
+    if (Object.keys(next).length) return;
 
-  const handleSave = async () => {
+    setSaving(true);
+    setServerError("");
     try {
-      setLoading(true);
-
-      const form = new FormData();
-      form.append("fullname", user.fullname);
-      form.append("email", user.email);
-      form.append("dob", user.dob);
-      form.append("fathername", user.fathername);
-      form.append("mothername", user.mothername);
-      form.append("role", user.role);
-      if (selectedFile) form.append("profileimg", selectedFile);
-
-      const res = await fetch(`${API_BASE_URL}/auth/profile`, {
+      // Same multipart PUT as before; the server reads text fields only and ignores role.
+      const body = new FormData();
+      FIELDS.forEach((k) => body.append(k, form[k].trim()));
+      const r = await fetch(`${API_BASE_URL}/auth/profile`, {
         method: "PUT",
-        headers: { Authorization: "Bearer " + token },
-        body: form,
+        headers: { Authorization: "Bearer " + localStorage.getItem("token") },
+        body,
         credentials: "include",
       });
-
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error);
-
-      toast.success("Profile Updated!");
-      setTimeout(() => navigate("/profile"), 1200);
-    } catch (err) {
-      toast.error(err.message);
+      const data = await r.json().catch(() => ({}));
+      if (!r.ok) {
+        if (r.status === 409) setErrors({ email: data.error || "Email is already in use" });
+        else setServerError(data.error || "Your changes could not be saved.");
+        return;
+      }
+      toast.success("Profile updated");
+      navigate("/profile");
+    } catch {
+      setServerError("Could not reach the server. Try again.");
     } finally {
-      setLoading(false);
+      setSaving(false);
     }
   };
 
-  if (loading) return <div className="loading-box">Loading...</div>;
+  const status = res.status === "idle" ? "loading" : res.status === "ok" && !form ? "loading" : res.status;
 
   return (
-    <div className="settings-page-layout"> {/* ✅ THIS is the main layout */}
-
-      {/* ==== LEFT: FORM ==== */}
-      <div className="profile-form-wrapper">
-        <div className="profile-form-card">
-
-          <h2>Edit Profile</h2>
-
-          {error && <p className="error-msg">{error}</p>}
-
-          {/* PROFILE IMAGE UPLOAD */}
-          <div className="profile-img-wrapper">
-            <img src={image} alt="profile" className="profile-img"/>
-            <label className="camera-btn">
-              <FaCamera/>
-              <input type="file" accept="image/*" onChange={handleImageChange} hidden/>
-            </label>
-          </div>
-
-          {/* INPUT FIELDS */}
-          <div className="profile-fields-grid">
-
-            <div>
-              <label>Full Name</label>
-              <input name="fullname" value={user.fullname} onChange={handleChange}/>
+    <div className="ui-page ui-page-narrow">
+      <PageHeader title="Edit profile" description="Update your personal details." />
+      <Panel status={status} onRetry={res.reload}>
+        {form && (
+          <form className="ui-form" onSubmit={handleSave} noValidate>
+            <div className="profile-summary">
+              <img src={profilePlaceholder} alt="" className="profile-avatar" />
+              <div>
+                <h2 className="profile-name">{form.fullname || "—"}</h2>
+                {res.data?.role && <RoleBadge role={res.data.role} />}
+              </div>
+            </div>
+            <div className="ui-banner ui-banner-info">
+              <FiInfo aria-hidden="true" />
+              <span>Profile photos can't be uploaded yet. Your role can only be changed by an administrator.</span>
             </div>
 
-            <div>
-              <label>Email</label>
-              <input name="email" value={user.email} onChange={handleChange}/>
+            <div className="ui-form-grid">
+              <Field label="Full name" error={errors.fullname}>
+                <input className="ui-input" value={form.fullname} onChange={set("fullname")} maxLength={150} autoComplete="name" />
+              </Field>
+              <Field label="Email" error={errors.email}>
+                <input className="ui-input" type="email" value={form.email} onChange={set("email")} autoComplete="email" />
+              </Field>
+              <Field label="Date of birth" optional>
+                <input className="ui-input" type="date" value={form.dob} onChange={set("dob")} />
+              </Field>
+              <Field label="Father's name" optional>
+                <input className="ui-input" value={form.fathername} onChange={set("fathername")} maxLength={150} />
+              </Field>
+              <Field label="Mother's name" optional>
+                <input className="ui-input" value={form.mothername} onChange={set("mothername")} maxLength={150} />
+              </Field>
             </div>
 
-            <div>
-              <label>Date of Birth</label>
-              <input type="date" name="dob" value={user.dob} onChange={handleChange}/>
+            {serverError && (
+              <div className="ui-banner ui-banner-error" role="alert">
+                <FiAlertCircle aria-hidden="true" />
+                <span>{serverError}</span>
+              </div>
+            )}
+            <div className="ui-form-actions">
+              <button type="button" className="ui-btn ui-btn-secondary" onClick={() => navigate("/profile")} disabled={saving}>
+                Cancel
+              </button>
+              <button type="submit" className="ui-btn ui-btn-primary" disabled={saving}>
+                {saving && <span className="ui-spinner" aria-hidden="true" />} {saving ? "Saving…" : "Save changes"}
+              </button>
             </div>
-
-            <div>
-              <label>Father's Name</label>
-              <input name="fathername" value={user.fathername} onChange={handleChange}/>
-            </div>
-
-            <div>
-              <label>Mother's Name</label>
-              <input name="mothername" value={user.mothername} onChange={handleChange}/>
-            </div>
-
-            <div>
-              <label>Role</label>
-              <input name="role" value={user.role} readOnly/>
-            </div>
-
-          </div>
-
-          {/* BUTTONS */}
-          <div className="profile-buttons">
-            <button onClick={handleSave} className="profile-btn-save">Save</button>
-            <button onClick={() => navigate("/profile")} className="profile-btn-cancel">Cancel</button>
-          </div>
-
-        </div>
-      </div>
-
-      <ToastContainer/>
+          </form>
+        )}
+      </Panel>
     </div>
   );
 };

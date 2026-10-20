@@ -1,18 +1,20 @@
 import React from 'react'
-import { FaRoute } from "react-icons/fa";
+import { Link } from 'react-router-dom'
+import { MdDirectionsBus } from "react-icons/md";
 import './header.css';
 
-const Sidebar_header = () => {
+const Sidebar_header = ({ collapsed = false }) => {
   return (
-    <div className="header-logo">
-      <div className="logo-icon">
-        <FaRoute />
-      </div>
-      <div className="logo-text">
-        <span>Route</span>
-        <span className="highlight">Master</span>
-      </div>
-    </div>
+    <Link to="/dashboard" className="header-logo" aria-label="Live Tracking home">
+      <span className="logo-icon" aria-hidden="true">
+        <MdDirectionsBus />
+      </span>
+      {!collapsed && (
+        <span className="logo-text">
+          Live <span className="highlight">Tracking</span>
+        </span>
+      )}
+    </Link>
   )
 }
 

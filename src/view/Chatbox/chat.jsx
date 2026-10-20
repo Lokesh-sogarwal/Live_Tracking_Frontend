@@ -2,7 +2,9 @@ import React, { useEffect, useRef, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { io } from "socket.io-client";
 import { fetchChatUsers } from "../../Components/Static/Chatusers";
+import { FiArrowLeft, FiSearch, FiSend, FiMessageSquare } from "react-icons/fi";
 import "./chat.css";
+import { LoadingState, EmptyState, ErrorState } from "../../Components/ui";
 import { jwtDecode } from "jwt-decode";
 import API_BASE_URL from "../../utils/config";
 
@@ -36,25 +38,32 @@ const Chat = () => {
     const messagesEndRef = useRef(null);
     const messagesContainerRef = useRef(null);
     const [socketConnected, setSocketConnected] = useState(false);
+    const [sendError, setSendError] = useState("");
+    const [sending, setSending] = useState(false);
+    const [connError, setConnError] = useState(false);
+    const [usersError, setUsersError] = useState(false);
+    const [usersReload, setUsersReload] = useState(0);
+    const [historyError, setHistoryError] = useState(false);
 
     // Initialize socket only once
     useEffect(() => {
         socketRef.current = io(API_BASE_URL, {
             path: "/socket.io",
             withCredentials: false,
+            auth: { token: localStorage.getItem("token") },
             transports: ["polling", "websocket"],
         });
 
         socketRef.current.on("connect", () => {
             setSocketConnected(true);
-            console.log("[chat] socket connected", socketRef.current.id);
+            setConnError(false);
         });
-        socketRef.current.on("disconnect", (reason) => {
+        socketRef.current.on("disconnect", () => {
             setSocketConnected(false);
-            console.log("[chat] socket disconnected", reason);
         });
         socketRef.current.on("connect_error", (err) => {
             setSocketConnected(false);
+            setConnError(true);
             console.error("[chat] socket connect_error", err?.message || err);
         });
         socketRef.current.on("error", (payload) => {
@@ -74,32 +83,40 @@ const Chat = () => {
     useEffect(() => {
         const loadUsers = async () => {
             setLoadingUsers(true);
+            setUsersError(false);
             try {
-                const data = await fetchChatUsers();
+                const data = await fetchChatUsers({ throwOnError: true });
                 // Initialize unreadCount from API
                 const usersWithData = data
                     .filter((user) => user.id !== currentUser.id)
                     .map(u => ({ ...u, lastMessageTime: null }));
                 setUsers(usersWithData);
             } catch (err) {
-                console.error("Error loading users:", err);
+                console.error("Error loading users:", err?.message || err);
                 setUsers([]);
+                setUsersError(true);
             } finally {
                 setLoadingUsers(false);
             }
         };
         loadUsers();
-    }, [currentUser.id]);
+    }, [currentUser.id, usersReload]);
 
     // Listen for incoming messages & Update User List
     useEffect(() => {
         const handleMessage = (msg) => {
-             // 1. Update Active Chat Messages
-            if (
+             // 1. Update Active Chat Messages — only messages of the open conversation,
+            // and never the same message twice (reconnect replays, double delivery).
+            const inOpenChat =
                 selectedUser &&
-                (msg.sender_id === currentUser.id || msg.sender_id === selectedUser.id)
-            ) {
-                setMessages((prev) => [...prev, msg]);
+                ((msg.sender_id === currentUser.id && msg.receiver_id === selectedUser.id) ||
+                    (msg.sender_id === selectedUser.id && msg.receiver_id === currentUser.id));
+            if (inOpenChat) {
+                setMessages((prev) =>
+                    msg.message_id && prev.some((m) => m.message_id === msg.message_id)
+                        ? prev
+                        : [...prev, msg]
+                );
             }
 
             // 2. Update User List (Sort & Unread Count)
@@ -167,7 +184,7 @@ const Chat = () => {
 
     // Send message
     const handleSend = () => {
-        if (!newMessage.trim() || !selectedUser || !socketRef.current || !socketConnected) return;
+        if (!newMessage.trim() || !selectedUser || !socketRef.current || !socketConnected || sending) return;
 
         const messageData = {
             sender_id: currentUser.id,
@@ -175,9 +192,14 @@ const Chat = () => {
             msg: newMessage,
         };
 
-        socketRef.current.emit("send_message", messageData, (ack) => {
-            if (!ack?.ok) {
-                console.error("[chat] send_message rejected", ack);
+        setSendError("");
+        setSending(true);
+        // The server acks once the message is stored; no ack within 10 s counts as a failure.
+        socketRef.current.timeout(10000).emit("send_message", messageData, (err, ack) => {
+            setSending(false);
+            if (err || !ack?.ok) {
+                setSendError(err ? "The server did not confirm your message. Check your connection and send it again." : ack?.error || "Your message was not delivered. Try again.");
+                setNewMessage((current) => current || messageData.msg);
             }
         });
         setNewMessage("");
@@ -189,6 +211,8 @@ const Chat = () => {
         setUsers(prev => prev.map(u => u.id === user.id ? { ...u, unreadCount: 0 } : u));
         
         setSelectedUser(user);
+        setSendError("");
+        setHistoryError(false);
         setLoadingMessages(true);
         
         if (socketRef.current) {
@@ -212,7 +236,9 @@ const Chat = () => {
             const data = await res.json();
             setMessages(data);
         } catch {
+            // Do not present a failed load as an empty conversation.
             setMessages([]);
+            setHistoryError(true);
         } finally {
             setLoadingMessages(false);
         }
@@ -253,98 +279,102 @@ const Chat = () => {
         }
     }, [users, location.state?.selectedUserId, selectedUser, handleSelectUser, navigate, location.pathname]);
     
-    // Restrict Reload
-    useEffect(() => {
-        const handleBeforeUnload = (e) => {
-            e.preventDefault();
-            e.returnValue = '';
-        };
-        window.addEventListener('beforeunload', handleBeforeUnload);
-        return () => window.removeEventListener('beforeunload', handleBeforeUnload);
-    }, []);
+    const initials = (name = "") =>
+        name.split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[0].toUpperCase()).join("") || "?";
+    const Avatar = ({ user }) =>
+        user.image ? (
+            <img src={user.image} alt="" className="chat-avatar" />
+        ) : (
+            <span className="chat-avatar chat-avatar-initials" aria-hidden="true">{initials(user.name)}</span>
+        );
 
     return (
-        <div className="ChatApp">
-            <div className="UsersList">
-                <div className="search-bar-container">
-                    <input 
-                        type="text" 
-                        placeholder="Search..." 
-                        className="search-input"
+        <div className={`chat-app ui-card${selectedUser ? " has-selection" : ""}`}>
+            <aside className="chat-sidebar" aria-label="Conversations">
+                <div className="chat-sidebar-head">
+                    <h1 className="chat-heading">Chat</h1>
+                    <span className={`chat-conn${socketConnected ? " is-on" : ""}`} role="status">
+                        <span className="chat-conn-dot" aria-hidden="true" />
+                        {socketConnected ? "Connected" : connError ? "Offline · retrying" : "Connecting…"}
+                    </span>
+                </div>
+                <div className="ui-search chat-search">
+                    <FiSearch aria-hidden="true" />
+                    <input
+                        type="search"
+                        placeholder="Search people"
+                        className="ui-input"
+                        aria-label="Search people"
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
                     />
                 </div>
-                <div className="UsersScroll">
+                <div className="chat-users">
                     {loadingUsers ? (
-                        <p>Loading users...</p>
+                        <LoadingState rows={5} />
+                    ) : usersError ? (
+                        <ErrorState message="Could not load your contacts." onRetry={() => setUsersReload((n) => n + 1)} />
                     ) : filteredUsers.length === 0 ? (
-                        <p>No users found</p>
+                        <EmptyState title={searchTerm ? "No one matches" : "No contacts"}>
+                            {searchTerm ? "Try a different name." : "There is no one you can message yet."}
+                        </EmptyState>
                     ) : (
-                        filteredUsers.map((user) => (
-                            <div
-                                key={user.id}
-                                className={`User ${selectedUser?.id === user.id ? "active" : ""}`}
-                                onClick={() => handleSelectUser(user)}
-                            >
-                                <img src={user.image} alt={user.name} className="UserImage" />
-                                <div className="UserInfo">
-                                    <div className="UserMainInfo">
-                                        <span className="UserName">{user.name}</span>
-                                        <span className="UserSubtitle">
-                                            {user.lastMessage
-                                                ? (user.lastMessage.length > 25
-                                                    ? user.lastMessage.substring(0, 25) + "..."
-                                                    : user.lastMessage)
-                                                : "Tap to chat"}
+                        <ul>
+                            {filteredUsers.map((user) => (
+                                <li key={user.id}>
+                                    <button
+                                        type="button"
+                                        className={`chat-user${selectedUser?.id === user.id ? " is-active" : ""}`}
+                                        aria-current={selectedUser?.id === user.id ? "true" : undefined}
+                                        onClick={() => handleSelectUser(user)}
+                                    >
+                                        <Avatar user={user} />
+                                        <span className="chat-user-info">
+                                            <span className="chat-user-name">{user.name}</span>
+                                            {/* /view/chat_users has no last-message data; only show a preview seen in this session. */}
+                                            {user.lastMessage && <span className="chat-user-sub">{user.lastMessage}</span>}
                                         </span>
-                                    </div>
-                                    <div className="UserMeta">
-                                        {user.unreadCount > 0 ? (
-                                            <>
-                                                <span className="UnreadBadge">{user.unreadCount}</span>
-                                                <span className="UserTimeBadge">{getFormattedTime(user.lastMessageTime)}</span>
-                                            </>
-                                        ) : (
-                                            <span className="UserTime">{getFormattedTime(user.lastMessageTime)}</span>
-                                        )}
-                                    </div>
-                                </div>
-                            </div>
-                        ))
+                                        <span className="chat-user-meta">
+                                            <span className="chat-user-time">{getFormattedTime(user.lastMessageTime)}</span>
+                                            {user.unreadCount > 0 && (
+                                                <span className="chat-unread" aria-label={`${user.unreadCount} unread`}>{user.unreadCount}</span>
+                                            )}
+                                        </span>
+                                    </button>
+                                </li>
+                            ))}
+                        </ul>
                     )}
                 </div>
-            </div>
+            </aside>
 
-            <div className="Chating-box">
+            <section className="chat-main" aria-label={selectedUser ? `Conversation with ${selectedUser.name}` : "Conversation"}>
                 {selectedUser ? (
                     <>
-                        <div className="chat-profile">
-                             <p> 
-                            <img src={selectedUser.image} alt={selectedUser.name} className="UserImage" />
-                                {selectedUser.name}
-                            </p>
-                        </div>
-                        <div className="Messages" ref={messagesContainerRef}>
+                        <header className="chat-main-head">
+                            <button type="button" className="ui-icon-btn chat-back" onClick={() => setSelectedUser(null)} aria-label="Back to conversations">
+                                <FiArrowLeft />
+                            </button>
+                            <Avatar user={selectedUser} />
+                            <h2 className="chat-main-name">{selectedUser.name}</h2>
+                        </header>
+                        <div className="chat-messages" ref={messagesContainerRef} role="log" aria-live="polite">
                             {loadingMessages ? (
-                                <p>Loading messages...</p>
+                                <LoadingState rows={4} />
+                            ) : historyError ? (
+                                <ErrorState message="Could not load this conversation." onRetry={() => handleSelectUser(selectedUser)} />
                             ) : messages.length === 0 ? (
-                                <p style={{flexGrow: 1, display: 'flex', justifyContent: 'center', alignItems: 'center'}}>No messages yet. Start the conversation!</p>
+                                <EmptyState icon={<FiMessageSquare />} title="No messages yet">Say hello to start the conversation.</EmptyState>
                             ) : (
                                 messages.map((msg, index) => {
                                     const isMe = msg.sender_id === currentUser.id;
                                     return (
-                                        <div
-                                            key={index}
-                                            className={`message-bubble ${isMe ? "sent" : "received"}`}
-                                        >
-                                            <span className="message-sender">
-                                                {isMe ? "You" : selectedUser.name}
-                                            </span>
-                                            <p style={{ margin: 0 }}>{msg.msg}</p>
-                                            <span className="message-time">
+                                        <div key={msg.message_id || index} className={`chat-bubble ${isMe ? "is-sent" : "is-received"}`}>
+                                            <span className="sr-only">{isMe ? "You" : selectedUser.name}: </span>
+                                            <p>{msg.msg}</p>
+                                            <span className="chat-bubble-time">
                                                 {msg.timestamp
-                                                    ? new Date(msg.timestamp).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })
+                                                    ? new Date(msg.timestamp).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" })
                                                     : ""}
                                             </span>
                                         </div>
@@ -354,23 +384,32 @@ const Chat = () => {
                             <div ref={messagesEndRef} />
                         </div>
 
-                        <div className="Input">
+                        {sendError && <p className="ui-error-text chat-send-error" role="alert">{sendError}</p>}
+                        <form
+                            className="chat-composer"
+                            onSubmit={(e) => {
+                                e.preventDefault();
+                                handleSend();
+                            }}
+                        >
                             <input
+                                className="ui-input"
                                 type="text"
-                                placeholder="Type a message..."
+                                placeholder={socketConnected ? "Type a message…" : "Waiting for connection…"}
+                                aria-label={`Message ${selectedUser.name}`}
                                 value={newMessage}
                                 onChange={(e) => setNewMessage(e.target.value)}
-                                onKeyDown={(e) => e.key === "Enter" && handleSend()}
                             />
-                            <button onClick={handleSend} disabled={!socketConnected || !selectedUser || !newMessage.trim()}>
-                                Send
+                            <button type="submit" className="ui-btn ui-btn-primary" disabled={!socketConnected || !newMessage.trim() || sending || historyError} aria-label={sending ? "Sending" : "Send"}>
+                                {sending ? <span className="ui-spinner" aria-hidden="true" /> : <FiSend aria-hidden="true" />}{" "}
+                                <span className="chat-send-label">{sending ? "Sending…" : "Send"}</span>
                             </button>
-                        </div>
+                        </form>
                     </>
                 ) : (
-                    <p>Select a user to start chatting</p>
+                    <EmptyState icon={<FiMessageSquare />} title="Select a conversation">Choose someone from the list to read and send messages.</EmptyState>
                 )}
-            </div>
+            </section>
         </div>
     );
 };

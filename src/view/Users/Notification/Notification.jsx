@@ -1,200 +1,136 @@
-import React, { useState, useEffect } from "react";
-import "./notification.css";
-import { ToastContainer, toast } from "react-toastify";
-import "react-toastify/dist/ReactToastify.css";
-import API_BASE_URL from "../../../utils/config";
+import React, { useEffect, useMemo, useState } from "react";
+import { toast } from "react-toastify";
 import { useNavigate } from "react-router-dom";
+import { FiBell, FiMessageSquare, FiAlertTriangle, FiCheckCircle, FiInfo, FiCheck, FiKey } from "react-icons/fi";
+import "./notification.css";
+import API_BASE_URL from "../../../utils/config";
+import useResource from "../../../hooks/useResource";
+import { PageHeader, Panel, Pagination, usePagination } from "../../../Components/ui";
+
+const ICONS = { feedback_reply: FiMessageSquare, application: FiInfo, chat: FiMessageSquare, message: FiMessageSquare, alert: FiAlertTriangle, warning: FiAlertTriangle, success: FiCheckCircle, info: FiInfo, password_reset: FiKey };
+const TITLES = { feedback_reply: "Reply to your feedback", application: "Application to review", chat: "New message", message: "New message", alert: "Alert", warning: "Warning", success: "Success", info: "Update", password_reset: "Password reset request" };
+const isChat = (n) => n.type === "chat" || n.type === "message";
+// Password reset requests are handled from the Users page (open requests are listed there).
+const isResetRequest = (n) => n.type === "password_reset";
 
 const Notification = () => {
-    const [notifications, setNotifications] = useState([]);
-    const [loading, setLoading] = useState(true);
-    const [filter, setFilter] = useState("all"); 
-    const navigate = useNavigate();
+  const navigate = useNavigate();
+  const res = useResource("/view/notifications");
+  const [notifications, setNotifications] = useState([]);
+  const [filter, setFilter] = useState("all");
+  const [markingAll, setMarkingAll] = useState(false);
 
-    // Restrict Reload
-    useEffect(() => {
-        const handleBeforeUnload = (e) => {
-            e.preventDefault();
-            e.returnValue = '';
-        };
-        window.addEventListener('beforeunload', handleBeforeUnload);
-        return () => window.removeEventListener('beforeunload', handleBeforeUnload);
-    }, []);
+  useEffect(() => {
+    if (res.status === "ok") setNotifications(Array.isArray(res.data) ? res.data : res.data?.notifications || []);
+  }, [res.status, res.data]);
 
-    const fetchNotifications = async () => {
-        try {
-            const token = localStorage.getItem("token");
-            if (!token) {
-                toast.error("Please log in to view notifications");
-                setLoading(false);
-                return;
-            }
+  const unread = notifications.filter((n) => !n.is_read).length;
+  const visible = useMemo(() => (filter === "unread" ? notifications.filter((n) => !n.is_read) : notifications), [notifications, filter]);
+  const pager = usePagination(visible, 15, filter);
 
-            const res = await fetch(`${API_BASE_URL}/view/notifications`, {
-                method: "GET",
-                headers: {
-                    "Content-Type": "application/json",
-                    "Authorization": "Bearer " + token
-                },
-                credentials: "include"
-            });
+  const markRead = async (n) => {
+    const r = await fetch(`${API_BASE_URL}/view/notifications/mark_read/${n.id}`, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
+    }).catch(() => null);
+    if (r?.ok) setNotifications((prev) => prev.map((x) => (x.id === n.id ? { ...x, is_read: true } : x)));
+    return Boolean(r?.ok);
+  };
 
-            const data = await res.json();
-            if (res.ok) {
-                // If data is an array, set it directly. 
-                // If nested (e.g. data.notifications), handle that.
-                const notifList = Array.isArray(data) ? data : (data.notifications || []);
-                setNotifications(notifList);
-            } else {
-                console.error("Failed to fetch notifications:", data.error);
-            }
-        } catch (error) {
-            console.error("Error fetching notifications:", error);
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    useEffect(() => {
-        fetchNotifications();
-    }, []);
-
-    const markAllRead = async () => {
-        try {
-            const token = localStorage.getItem("token");
-            if (!token) return;
-
-            // Optimistic update
-            setNotifications(prev => prev.map(n => ({...n, is_read: true})));
-
-            await fetch(`${API_BASE_URL}/view/notifications/mark_read_all`, {
-                method: "POST",
-                headers: {
-                     "Authorization": "Bearer " + token,
-                     "Content-Type": "application/json"
-                }
-            });
-            toast.success("All notifications marked as read");
-        } catch (e) {
-            console.error(e);
-        }
+  const markAllRead = async () => {
+    setMarkingAll(true);
+    try {
+      const r = await fetch(`${API_BASE_URL}/view/notifications/mark_read_all`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
+      });
+      // Only report success once the server has stored it.
+      if (!r.ok) throw new Error();
+      setNotifications((prev) => prev.map((n) => ({ ...n, is_read: true })));
+      toast.success("All notifications marked as read");
+    } catch {
+      toast.error("Could not mark notifications as read");
+    } finally {
+      setMarkingAll(false);
     }
+  };
 
-    const handleNotificationClick = async (notif) => {
-        if (!notif.is_read) {
-            // Mark individual as read (optional)
+  const open = async (n) => {
+    if (!n.is_read) await markRead(n);
+    // Chat notifications carry sender_id so the chat opens on that conversation.
+    if (n.link) navigate(n.link);
+    else if (isChat(n)) navigate("/chat", n.sender_id ? { state: { selectedUserId: n.sender_id } } : undefined);
+    else if (isResetRequest(n)) navigate("/users");
+  };
+
+  return (
+    <div className="ui-page ui-page-narrow">
+      <PageHeader
+        title="Notifications"
+        description={res.status === "ok" ? (unread ? `${unread} unread` : "You're all caught up") : undefined}
+        actions={
+          unread > 0 && (
+            <button type="button" className="ui-btn ui-btn-secondary" onClick={markAllRead} disabled={markingAll}>
+              <FiCheck aria-hidden="true" /> Mark all as read
+            </button>
+          )
         }
+      />
 
-        if (notif.type === "message" || notif.title === "New Message") {
-            // Assuming payload contains sender_id or similar. 
-            // If backend provides sender_id in notif:
-            const list = Array.isArray(notifications) ? notifications : [];
-            // If we don't have the ID, we might just go to chat
-            const senderId = notif.related_id || notif.sender_id; 
-            if (senderId) {
-                navigate('/chat', { state: { selectedUserId: senderId } });
-            } else {
-                navigate('/chat');
-            }
-        }
-    };
+      <div className="ui-tabs" role="tablist" aria-label="Filter notifications">
+        <button type="button" role="tab" className="ui-tab" aria-selected={filter === "all"} onClick={() => setFilter("all")}>
+          All <span className="ui-tab-count">{notifications.length}</span>
+        </button>
+        <button type="button" role="tab" className="ui-tab" aria-selected={filter === "unread"} onClick={() => setFilter("unread")}>
+          Unread <span className="ui-tab-count">{unread}</span>
+        </button>
+      </div>
 
-    // Helper to format date
-    const formatDate = (dateString) => {
-        if (!dateString) return "";
-        try {
-            const date = new Date(dateString);
-            return date.toLocaleString(); 
-        } catch (e) {
-            return dateString;
-        }
-    };
-
-    const filteredNotifications = notifications.filter(notif => {
-        if (filter === "unread") return !notif.is_read;
-        return true;
-    });
-
-    const newCount = notifications.filter(n => !n.is_read).length;
-
-    return (
-        <div className="notification-page">
-            <ToastContainer />
-            <div className="notification-container">
-                <div className="notif-header">
-                    <h2>Notifications</h2>
-                    <div style={{display: 'flex', gap: '10px', alignItems: 'center'}}>
-                        <span className="badge">{newCount} New</span>
-                        {newCount > 0 && <button onClick={markAllRead} style={{fontSize: '0.8rem', padding: '4px 10px', cursor: 'pointer', background: 'transparent', border: '1px solid #6366f1', color: '#6366f1', borderRadius: '4px'}}>Mark all read</button>}
-                    </div>
-                </div>
-
-                <div className="filter-tabs" style={{marginBottom: "20px", display: "flex", gap: "10px"}}>
-                    <button 
-                        onClick={() => setFilter("all")}
-                        style={{
-                            padding: "8px 16px",
-                            borderRadius: "20px",
-                            border: "none",
-                            background: filter === "all" ? "#6366f1" : "white",
-                            color: filter === "all" ? "white" : "#666",
-                            cursor: "pointer",
-                            fontWeight: "bold"
-                        }}
-                    >
-                        All
-                    </button>
-                    <button 
-                         onClick={() => setFilter("unread")}
-                         style={{
-                            padding: "8px 16px",
-                            borderRadius: "20px",
-                            border: "none",
-                            background: filter === "unread" ? "#6366f1" : "white",
-                            color: filter === "unread" ? "white" : "#666",
-                            cursor: "pointer",
-                            fontWeight: "bold"
-                        }}
-                    >
-                        Unread
-                    </button>
-                </div>
-                
-                <div className="notif-list">
-                    {loading ? (
-                        <p style={{textAlign: "center", padding: "20px"}}>Loading notifications...</p>
-                    ) : filteredNotifications.length === 0 ? (
-                        <p style={{textAlign: "center", padding: "20px", color: "#666"}}>
-                           {filter === "unread" ? "No unread notifications." : "No notifications found."}
-                        </p>
-                    ) : (
-                        filteredNotifications.map((notif) => (
-                            <div 
-                                key={notif.id || Math.random()} 
-                                className={`notif-item ${notif.type || 'info'} ${!notif.is_read ? 'unread-item' : ''}`}
-                                onClick={() => handleNotificationClick(notif)}
-                                style={{cursor: notif.type === "message" ? "pointer" : "default"}}
-                            >
-                                <div className="notif-icon">
-                                    {notif.type === "alert" && "🚨"}
-                                    {notif.type === "info" && "ℹ️"}
-                                    {notif.type === "success" && "✅"}
-                                    {notif.type === "warning" && "⚠️"}
-                                    {!notif.type && "📌"}
-                                </div>
-                                <div className="notif-content">
-                                    <h4>{notif.type ? notif.type.charAt(0).toUpperCase() + notif.type.slice(1) : "Notification"}</h4>
-                                    <p>{notif.message}</p>
-                                    <span className="notif-time">{notif.timestamp ? formatDate(notif.timestamp) : ""}</span>
-                                </div>
-                                {!notif.is_read && <div style={{width: "8px", height: "8px", borderRadius: "50%", background: "#ef4444", marginLeft: "auto"}}></div>}
-                            </div>
-                        ))
-                    )}
-                </div>
-            </div>
-        </div>
-    );
+      <Panel
+        title={filter === "unread" ? "Unread" : "All notifications"}
+        status={res.status === "idle" ? "loading" : res.status}
+        onRetry={res.reload}
+        isEmpty={visible.length === 0}
+        empty={filter === "unread" ? "No unread notifications." : "No notifications yet."}
+        flush
+        footer={<Pagination {...pager} label="notifications" />}
+      >
+        <ul className="notif-list">
+          {pager.pageItems.map((n) => {
+            const Icon = ICONS[n.type] || FiBell;
+            const actionable = Boolean(n.link) || isChat(n) || isResetRequest(n) || !n.is_read;
+            const body = (
+              <>
+                <span className={`notif-icon notif-icon-${n.type || "info"}`} aria-hidden="true">
+                  <Icon />
+                </span>
+                <span className="notif-body">
+                  <span className="notif-title">
+                    {TITLES[n.type] || "Notification"}
+                    {!n.is_read && <span className="sr-only"> (unread)</span>}
+                  </span>
+                  <span className="notif-message">{n.message}</span>
+                  {n.timestamp && <span className="notif-time">{n.timestamp}</span>}
+                </span>
+                {!n.is_read && <span className="notif-dot" aria-hidden="true" />}
+              </>
+            );
+            return (
+              <li key={n.id} className={`notif-item${n.is_read ? "" : " is-unread"}`}>
+                {actionable ? (
+                  <button type="button" className="notif-row" onClick={() => open(n)} title={n.link ? "Open" : isChat(n) ? "Open chat" : isResetRequest(n) ? "Open Users" : "Mark as read"}>
+                    {body}
+                  </button>
+                ) : (
+                  <div className="notif-row">{body}</div>
+                )}
+              </li>
+            );
+          })}
+        </ul>
+      </Panel>
+    </div>
+  );
 };
 
 export default Notification;

@@ -1,17 +1,22 @@
 import React, { useState } from "react";
-import "./LoginSignup.css";
-import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faFacebook, faGoogle, faTwitter } from "@fortawesome/free-brands-svg-icons";
-import { useNavigate } from "react-router-dom";
-import { toast, ToastContainer } from "react-toastify"; 
+import { Link, useLocation, useNavigate } from "react-router-dom";
+import { toast, ToastContainer } from "react-toastify";
+import { FiAlertCircle } from "react-icons/fi";
 import API_BASE_URL from "../../../utils/config";
+import AuthLayout from "../AuthLayout";
+import PasswordField from "../PasswordField";
 
 const Login = () => {
+  const location = useLocation();
+  // Where to continue after signing in (set by PrivateRoute), and any message to show.
+  const from = typeof location.state?.from === "string" && location.state.from.startsWith("/") ? location.state.from : "/dashboard";
+  const notice = location.state?.notice || (location.state?.from ? "Sign in to continue." : "");
   const [formData, setFormData] = useState({
-    email: "",
+    email: location.state?.email || "",
     password: "",
   });
   const [error, setError] = useState("");
+  const [submitting, setSubmitting] = useState(false);
   const navigate = useNavigate();
 
   const handleChange = (e) => {
@@ -22,12 +27,13 @@ const Login = () => {
     }));
   };
 
-  const GoogleLogin = () => {
-    toast.info("Google login is disabled right now!");
-  };
-
+  // Same request, token storage and redirect as before; only a guard against double submits
+  // was added. Errors are shown inline next to the form.
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (submitting) return;
+    setError("");
+    setSubmitting(true);
     try {
       const res = await fetch(`${API_BASE_URL}/auth/login`, {
         method: "POST",
@@ -39,179 +45,92 @@ const Login = () => {
       const data = await res.json();
       if (!res.ok) {
         setError(data.error || "Something went wrong");
-        toast.error(data.error || "Something went wrong");
+        return;
+      }
+
+      // Driver/operator applicants get a scoped token for their application only.
+      if (data.application_token) {
+        localStorage.setItem("application_token", data.application_token);
+        navigate("/application");
         return;
       }
 
       if (data.token) {
+        localStorage.removeItem("application_token");
         localStorage.setItem("token", data.token);
+        // An administrator issued a temporary password: a new one must be chosen first.
+        if (data.must_change_password) {
+          navigate("/change-password");
+          return;
+        }
         toast.success("Login Successful");
 
-        navigate("/dashboard");
+        navigate(from, { replace: true });
       }
     } catch (err) {
       setError("Server error. Please try again later.");
-      toast.error("Server error. Please try again later.");
+    } finally {
+      setSubmitting(false);
     }
   };
 
-  const goToSignup = () => {
-    navigate("/signup");
-  };
-
   return (
-    <div className="login-main">
-      <div className="login-orbit login-orbit-1" />
-      <div className="login-orbit login-orbit-2" />
-      <div className="auth-shell">
-        {/* LEFT: FORM PANEL */}
-        <div className="auth-left-panel">
-          <div className="auth-top-row">
-            <button
-              type="button"
-              className="auth-back-pill"
-              onClick={() => navigate("/")}
-            >
-              ←
-            </button>
-            <div className="auth-top-link">
-              <span>New here?</span>
-              <button type="button" onClick={goToSignup} className="auth-inline-link">
-                Create an account
-              </button>
-            </div>
+    <>
+      <AuthLayout>
+        <h2 className="si-title">Sign in</h2>
+        <p className="si-subtitle">Enter the email and password for your account.</p>
+        {notice && <p className="si-notice" role="status">{notice}</p>}
+
+        <form className="si-form" onSubmit={handleSubmit} aria-busy={submitting}>
+          <div className="si-field">
+            <label htmlFor="login-email">Email address</label>
+            <input
+              id="login-email"
+              type="email"
+              name="email"
+              value={formData.email}
+              onChange={handleChange}
+              placeholder="you@example.com"
+              autoComplete="email"
+              required
+              aria-invalid={Boolean(error)}
+              aria-describedby={error ? "login-error" : undefined}
+            />
           </div>
 
-          <h1 className="auth-title">Sign in</h1>
-          <p className="auth-subtitle-text">
-            Log in to monitor live buses, manage routes and keep every
-            passenger informed in real time.
-          </p>
-
-          <form className="auth-form" onSubmit={handleSubmit}>
-            <div className="auth-input-row">
-              <span className="auth-input-label">Email</span>
-              <input
-                type="email"
-                name="email"
-                value={formData.email}
-                onChange={handleChange}
-                placeholder="Enter your email" 
-                required
-              />
-            </div>
-            <div className="auth-input-row">
-              <span className="auth-input-label">Password</span>
-              <input
-                type="password"
-                name="password"
-                value={formData.password}
-                onChange={handleChange}
-                placeholder="Enter your password"
-                required
-              />
-            </div>
-
-            <div className="auth-extra-row">
-              <a href="#" className="auth-inline-link">
-                Forgot password?
-              </a>
-            </div>
-
-            <button type="submit" className="auth-primary-btn">
-              Login
-            </button>
-
-            <div className="auth-or-row">
-              <span />
-              <p>or continue with</p>
-              <span />
-            </div>
-
-            <div className="social-signup">
-              <button type="button" onClick={GoogleLogin}>
-                <FontAwesomeIcon icon={faGoogle} size="lg" />
-              </button>
-              <button type="button">
-                <FontAwesomeIcon icon={faFacebook} size="lg" />
-              </button>
-              <button type="button">
-                <FontAwesomeIcon icon={faTwitter} size="lg" />
-              </button>
-            </div>
-
-            <p className="auth-bottom-text">
-              Don’t have an account?{" "}
-              <button
-                type="button"
-                onClick={goToSignup}
-                className="auth-inline-link"
-              >
-                Sign up
-              </button>
+          <div>
+            <PasswordField
+              id="login-password"
+              label="Password"
+              name="password"
+              value={formData.password}
+              onChange={handleChange}
+              placeholder="Enter your password"
+              required
+            />
+            <p className="si-row-end">
+              <Link to="/forgot-password" state={{ email: formData.email }}>Forgot password?</Link>
             </p>
-          </form>
-        </div>
-
-        {/* RIGHT: DEVICE ILLUSTRATION PANEL (DESKTOP + MOBILE) */}
-        <div className="auth-right-panel">
-          <div className="auth-right-gradient" />
-          <div className="auth-right-content">
-            <div className="auth-device-stack" aria-hidden="true">
-              <div className="auth-device auth-device-main">
-                <div className="auth-device-header">
-                  <span className="auth-device-title">Live Fleet Dashboard</span>
-                  <span className="auth-device-status">All routes online</span>
-                </div>
-                <div className="auth-device-map">
-                  <span className="auth-device-line auth-device-line-1" />
-                  <span className="auth-device-line auth-device-line-2" />
-                  <span className="auth-device-line auth-device-line-3" />
-                  <span className="auth-device-stop stop-1" />
-                  <span className="auth-device-stop stop-2" />
-                  <span className="auth-device-stop stop-3" />
-                </div>
-                <div className="auth-device-footer">
-                  <div>
-                    <p className="auth-device-label">Active buses</p>
-                    <p className="auth-device-value">42</p>
-                  </div>
-                  <div>
-                    <p className="auth-device-label">On-time</p>
-                    <p className="auth-device-value success">96%</p>
-                  </div>
-                  <div>
-                    <p className="auth-device-label">Alerts</p>
-                    <p className="auth-device-value warning">3</p>
-                  </div>
-                </div>
-              </div>
-
-              <div className="auth-device auth-device-secondary">
-                <div className="auth-device-secondary-header">
-                  <span className="auth-device-badge">Passenger view</span>
-                  <span className="auth-device-time">08:35</span>
-                </div>
-                <div className="auth-device-secondary-body">
-                  <p className="auth-device-secondary-title">Next bus in 4 min</p>
-                  <p className="auth-device-secondary-sub">
-                    Route 12 · Campus Loop
-                  </p>
-                  <div className="auth-device-progress">
-                    <span className="auth-device-progress-fill" />
-                  </div>
-                  <div className="auth-device-tags">
-                    <span>Live ETA</span>
-                    <span>Stop alerts</span>
-                  </div>
-                </div>
-              </div>
-            </div>
           </div>
-        </div>
-      </div>
+
+          {error && (
+            <p id="login-error" className="si-error" role="alert">
+              <FiAlertCircle aria-hidden="true" /> {error}
+            </p>
+          )}
+
+          <button type="submit" className="si-submit" disabled={submitting}>
+            {submitting && <span className="si-spinner" aria-hidden="true" />}
+            {submitting ? "Signing in…" : "Sign in"}
+          </button>
+        </form>
+
+        <p className="si-alt">
+          New here? <Link to="/signup">Create a passenger account</Link>
+        </p>
+      </AuthLayout>
       <ToastContainer />
-    </div>
+    </>
   );
 };
 

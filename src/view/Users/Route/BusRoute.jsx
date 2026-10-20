@@ -1,410 +1,182 @@
-import React, { useState, useRef, useEffect } from "react";
-import { ToastContainer, toast } from "react-toastify";
-import "react-toastify/dist/ReactToastify.css";
+import React, { useState } from "react";
+import { toast } from "react-toastify";
+import { FiPlus, FiTrash2, FiArrowUp, FiArrowDown } from "react-icons/fi";
 import "./BusRoute.css";
 import API_BASE_URL from "../../../utils/config";
+import useResource from "../../../hooks/useResource";
+import { usePermissions } from "../../../context/PermissionsContext";
+import { PageHeader, Panel, Field, PlaceInput } from "../../../Components/ui";
+
+// India-only check kept from the previous version (the UI only offers Indian places).
+const isInIndia = async (place) => {
+  try {
+    const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(place)}&limit=1`);
+    const data = await res.json();
+    return Array.isArray(data) && data.length > 0 && data[0].display_name.includes("India");
+  } catch {
+    return null; // geocoder unreachable: let the server decide
+  }
+};
 
 const RouteCreation = () => {
-  const containerRef = useRef(null);
-
-  const [routes, setRoutes] = useState([]);
+  const { can } = usePermissions();
+  const existing = useResource("/data/get_routes", can("dashboard"));
   const [routeName, setRouteName] = useState("");
   const [startPoint, setStartPoint] = useState("");
   const [endPoint, setEndPoint] = useState("");
-  const [stops, setStops] = useState([""]);
+  const [stops, setStops] = useState([]);
+  const [errors, setErrors] = useState({});
+  const [saving, setSaving] = useState(false);
+  const [lastCreated, setLastCreated] = useState(null);
 
-  const [startSuggestions, setStartSuggestions] = useState([]);
-  const [endSuggestions, setEndSuggestions] = useState([]);
-  const [stopSuggestions, setStopSuggestions] = useState([[]]);
-
-  const [loading, setLoading] = useState(false);
-
-  const [startLoading, setStartLoading] = useState(false);
-  const [endLoading, setEndLoading] = useState(false);
-  const [stopLoading, setStopLoading] = useState([false]);
-
-  // Debounce function
-  const debounce = (func, delay = 300) => {
-    let timer;
-    return (...args) => {
-      clearTimeout(timer);
-      timer = setTimeout(() => func(...args), delay);
-    };
-  };
-
-  // Filter API results
-  const filterSuggestions = (data) => {
-    const filtered = data
-      .filter((place) => place.display_name.includes("India"))
-      .map((place) => ({
-        display_name: place.display_name,
-        lat: place.lat,
-        lon: place.lon,
-      }));
-    const seen = new Set();
-    return filtered.filter((place) => {
-      if (seen.has(place.display_name)) return false;
-      seen.add(place.display_name);
-      return true;
+  const setStop = (i, v) => setStops((s) => s.map((x, j) => (j === i ? v : x)));
+  const moveStop = (i, d) =>
+    setStops((s) => {
+      const next = [...s];
+      [next[i], next[i + d]] = [next[i + d], next[i]];
+      return next;
     });
-  };
 
-  // Fetch suggestions
-  const fetchSuggestions = debounce(
-    async (query, setter, setLoadingState = null, index = null) => {
-      if (!query) {
-        setter([]);
-        if (setLoadingState) {
-          if (index !== null) {
-            const newArr = [...stopLoading];
-            newArr[index] = false;
-            setStopLoading(newArr);
-          } else {
-            setLoadingState(false);
-          }
-        }
-        return;
-      }
-
-      if (setLoadingState) {
-        if (index !== null) {
-          const newArr = [...stopLoading];
-          newArr[index] = true;
-          setStopLoading(newArr);
-        } else {
-          setLoadingState(true);
-        }
-      }
-
-      try {
-        const res = await fetch(
-          `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(
-            query
-          )}&addressdetails=1&limit=5&countrycodes=IN&accept-language=en`
-        );
-        const data = await res.json();
-        const filtered = filterSuggestions(data);
-        setter(filtered);
-      } catch (err) {
-        console.error("Failed to fetch suggestions", err);
-        setter([]);
-      } finally {
-        if (setLoadingState) {
-          if (index !== null) {
-            const newArr = [...stopLoading];
-            newArr[index] = false;
-            setStopLoading(newArr);
-          } else {
-            setLoadingState(false);
-          }
-        }
-      }
-    },
-    250
-  );
-
-  // Handle suggestion selection
-  const handleSelectSuggestion = (
-    suggestion,
-    setterInput,
-    setterCoords = null,
-    index = null,
-    clearSuggestions = null
-  ) => {
-    setterInput(suggestion.display_name, index);
-    if (index !== null && setterCoords) {
-      const newCoords = [...setterCoords];
-      newCoords[index] = [parseFloat(suggestion.lat), parseFloat(suggestion.lon)];
-      setterCoords(newCoords);
-    }
-    if (clearSuggestions) clearSuggestions([]);
-  };
-
-  // Highlight typed part
-  const highlightMatch = (text, query) => {
-    const regex = new RegExp(`(${query})`, "gi");
-    const parts = text.split(regex);
-    return parts.map((part, i) =>
-      regex.test(part) ? (
-        <span key={i} style={{ fontWeight: "bold", backgroundColor: "#fffa8b" }}>
-          {part}
-        </span>
-      ) : (
-        <span key={i}>{part}</span>
-      )
-    );
-  };
-
-  // Click outside to hide suggestions
-  useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (containerRef.current && !containerRef.current.contains(event.target)) {
-        setStartSuggestions([]);
-        setEndSuggestions([]);
-        setStopSuggestions(stops.map(() => []));
-      }
-    };
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, [stops]);
-
-  // Stops handlers
-  const handleStopChange = (index, value) => {
-    const newStops = [...stops];
-    newStops[index] = value;
-    setStops(newStops);
-
-    const newStopSuggestions = [...stopSuggestions];
-    newStopSuggestions[index] = [];
-    setStopSuggestions(newStopSuggestions);
-
-    fetchSuggestions(value, (data) => {
-      const updated = [...stopSuggestions];
-      updated[index] = data;
-      setStopSuggestions(updated);
-    }, null, index);
-  };
-
-  const handleAddStop = () => {
-    setStops([...stops, ""]);
-    setStopSuggestions([...stopSuggestions, []]);
-    setStopLoading([...stopLoading, false]);
-  };
-
-  const handleRemoveStop = (index) => {
-    setStops(stops.filter((_, i) => i !== index));
-    setStopSuggestions(stopSuggestions.filter((_, i) => i !== index));
-    setStopLoading(stopLoading.filter((_, i) => i !== index));
-  };
-
-  // Validate location
-  const validateLocation = async (place) => {
-    try {
-      const res = await fetch(
-        `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(
-          place
-        )}&limit=1`
-      );
-      const data = await res.json();
-      if (data.length === 0) return false;
-      return data[0].display_name.includes("India");
-    } catch (err) {
-      console.error("Geocoding failed:", err);
-      return false;
-    }
-  };
-
-  // Add route
   const handleAddRoute = async (e) => {
     e.preventDefault();
-    if (!routeName || !startPoint || !endPoint) {
-      toast.error("⚠️ Please fill all fields");
-      return;
-    }
+    const next = {};
+    if (!routeName.trim()) next.routeName = "Give the route a name";
+    if (!startPoint.trim()) next.startPoint = "Choose where the route starts";
+    if (!endPoint.trim()) next.endPoint = "Choose where the route ends";
+    setErrors(next);
+    if (Object.keys(next).length) return;
 
-    setLoading(true);
+    setSaving(true);
     try {
-      const isStartValid = await validateLocation(startPoint);
-      const isEndValid = await validateLocation(endPoint);
-      const stopChecks = await Promise.all(
-        stops.filter((s) => s.trim() !== "").map((s) => validateLocation(s))
-      );
-
-      if (!isStartValid || !isEndValid || stopChecks.includes(false)) {
-        toast.error("❌ One or more locations are outside India.");
-        setLoading(false);
+      const filledStops = stops.map((s) => s.trim()).filter(Boolean);
+      const checks = await Promise.all([startPoint, endPoint, ...filledStops].map(isInIndia));
+      const outside = {};
+      if (checks[0] === false) outside.startPoint = "This place is outside India or could not be found";
+      if (checks[1] === false) outside.endPoint = "This place is outside India or could not be found";
+      checks.slice(2).forEach((ok, i) => {
+        if (ok === false) outside[`stop${i}`] = "Outside India or not found";
+      });
+      if (Object.keys(outside).length) {
+        setErrors(outside);
+        toast.error("One or more places are outside India.");
         return;
       }
 
-      const token = localStorage.getItem("token");
       const response = await fetch(`${API_BASE_URL}/bus/bus_route`, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          route_name: routeName,
-          starting: startPoint,
-          destination: endPoint,
-          stops: stops.filter((s) => s.trim() !== ""),
-        }),
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${localStorage.getItem("token")}` },
+        body: JSON.stringify({ route_name: routeName.trim(), starting: startPoint.trim(), destination: endPoint.trim(), stops: filledStops }),
       });
-
-      const result = await response.json();
-
-      if (response.ok) {
-        setRoutes([...routes, result.route]);
-        setRouteName("");
-        setStartPoint("");
-        setEndPoint("");
-        setStops([""]);
-        setStopSuggestions([[]]);
-        setStopLoading([false]);
-        toast.success("✅ Route created successfully!");
-      } else {
-        toast.error(result.error || "❌ Something went wrong");
+      const result = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        toast.error(result.error || "Could not create the route");
+        return;
       }
-    } catch (error) {
-      console.error("Error adding route:", error);
-      toast.error("🚨 Server error, try again later");
+      setLastCreated(result);
+      setRouteName("");
+      setStartPoint("");
+      setEndPoint("");
+      setStops([]);
+      setErrors({});
+      toast.success(`Route “${result.route?.route_name}” created`);
+      existing.reload();
+    } catch {
+      toast.error("Could not reach the server. Try again.");
     } finally {
-      setLoading(false);
+      setSaving(false);
     }
   };
 
-  return (
-    <div className="route-container" ref={containerRef}>
-      <div className="route-form-card">
-        <form onSubmit={handleAddRoute} className="route-form">
-          {/* Route Name */}
-          <div className="form-group">
-            <label>Route Name</label>
-            <input
-              type="text"
-              value={routeName}
-              onChange={(e) => setRouteName(e.target.value)}
-              placeholder="e.g., City Center Express"
-            />
-          </div>
+  const routes = Array.isArray(existing.data) ? existing.data : [];
 
-          {/* Starting Point */}
-          <div className="form-group">
-            <label>Starting Point</label>
-            <input
-              value={startPoint}
-              onChange={(e) => {
-                setStartPoint(e.target.value);
-                fetchSuggestions(e.target.value, setStartSuggestions, setStartLoading);
-              }}
-              placeholder="e.g., Main Bus Stand"
-            />
-            {startLoading && <div className="loading">Loading...</div>}
-            {startSuggestions.length > 0 && (
-              <ul className="suggestions">
-                {startSuggestions.map((s, idx) => (
-                  <li
-                    key={idx}
-                    onClick={() =>
-                      handleSelectSuggestion(s, setStartPoint, null, null, setStartSuggestions)
-                    }
-                  >
-                    {highlightMatch(s.display_name, startPoint)}
+  return (
+    <div className="ui-page">
+      <PageHeader title="Create route" description="Define a route from a start point to a destination, with optional stops in travel order." />
+
+      <div className="route-layout">
+        <section className="ui-card" aria-labelledby="new-route-title">
+          <header className="ui-card-header">
+            <h2 id="new-route-title" className="ui-card-title">New route</h2>
+          </header>
+          <form className="ui-card-body ui-form" onSubmit={handleAddRoute} noValidate>
+            <Field label="Route name" error={errors.routeName}>
+              <input className="ui-input" value={routeName} onChange={(e) => setRouteName(e.target.value)} placeholder="e.g. City Center Express" maxLength={100} />
+            </Field>
+            <Field label="Starting point" error={errors.startPoint} hint="Type at least 3 letters to see suggestions">
+              <PlaceInput value={startPoint} onChange={setStartPoint} placeholder="e.g. Main Bus Stand" />
+            </Field>
+
+            <fieldset className="route-stops">
+              <legend className="ui-label">
+                Stops <span className="ui-label-optional">(optional, in travel order)</span>
+              </legend>
+              {stops.length === 0 && <p className="ui-hint">No stops yet.</p>}
+              <ol className="route-stop-list">
+                {stops.map((stop, i) => (
+                  <li key={i} className="route-stop">
+                    <span className="route-stop-num" aria-hidden="true">{i + 1}</span>
+                    <div className="route-stop-input">
+                      <PlaceInput value={stop} onChange={(v) => setStop(i, v)} placeholder={`Stop ${i + 1}`} aria-label={`Stop ${i + 1}`} aria-invalid={errors[`stop${i}`] ? "true" : undefined} />
+                      {errors[`stop${i}`] && <span className="ui-error-text">{errors[`stop${i}`]}</span>}
+                    </div>
+                    <div className="route-stop-actions">
+                      <button type="button" className="ui-icon-btn" onClick={() => moveStop(i, -1)} disabled={i === 0} aria-label={`Move stop ${i + 1} up`}><FiArrowUp /></button>
+                      <button type="button" className="ui-icon-btn" onClick={() => moveStop(i, 1)} disabled={i === stops.length - 1} aria-label={`Move stop ${i + 1} down`}><FiArrowDown /></button>
+                      <button type="button" className="ui-icon-btn route-stop-remove" onClick={() => setStops((s) => s.filter((_, j) => j !== i))} aria-label={`Remove stop ${i + 1}`}><FiTrash2 /></button>
+                    </div>
                   </li>
                 ))}
-              </ul>
-            )}
-          </div>
+              </ol>
+              <button type="button" className="ui-btn ui-btn-secondary ui-btn-sm" onClick={() => setStops((s) => [...s, ""])} disabled={stops.length >= 25}>
+                <FiPlus aria-hidden="true" /> Add stop
+              </button>
+            </fieldset>
 
-          {/* Stops */}
-          <div className="form-group">
-            <label>Stops</label>
-            {stops.map((stop, index) => (
-              <div key={index} className="stop-input">
-                <input
-                  type="text"
-                  value={stop}
-                  onChange={(e) => handleStopChange(index, e.target.value)}
-                  placeholder={`Stop ${index + 1}`}
-                />
-                {stopLoading[index] && <div className="loading">Loading...</div>}
-                {stopSuggestions[index]?.length > 0 && (
-                  <ul className="suggestions">
-                    {stopSuggestions[index].map((s, idx) => (
-                      <li
-                        key={idx}
-                        onClick={() =>
-                          handleSelectSuggestion(
-                            s,
-                            (val) => {
-                              const newStops = [...stops];
-                              newStops[index] = val;
-                              setStops(newStops);
-                            },
-                            null,
-                            index,
-                            (arr) => {
-                              const updated = [...stopSuggestions];
-                              updated[index] = arr;
-                              setStopSuggestions(updated);
-                            }
-                          )
-                        }
-                      >
-                        {highlightMatch(s.display_name, stop)}
-                      </li>
-                    ))}
-                  </ul>
-                )}
-                {stops.length > 1 && (
-                  <button
-                    type="button"
-                    className="remove-btn"
-                    onClick={() => handleRemoveStop(index)}
-                  >
-                    ❌
-                  </button>
+            <Field label="Destination" error={errors.endPoint}>
+              <PlaceInput value={endPoint} onChange={setEndPoint} placeholder="e.g. Airport" />
+            </Field>
+
+            <div className="ui-form-actions">
+              <button type="submit" className="ui-btn ui-btn-primary" disabled={saving}>
+                {saving && <span className="ui-spinner" aria-hidden="true" />} {saving ? "Creating…" : "Create route"}
+              </button>
+            </div>
+          </form>
+        </section>
+
+        <div className="route-side">
+          {lastCreated?.route && (
+            <div className="ui-banner ui-banner-success" role="status">
+              <div>
+                <strong>{lastCreated.route.route_name}</strong> was created: {lastCreated.route.start_point} →{" "}
+                {(lastCreated.route.stops || []).map((s) => s.stop_name).concat(lastCreated.route.end_point).join(" → ")}
+                {lastCreated.skipped_stops?.length > 0 && (
+                  <p className="route-skipped">Could not locate and skipped: {lastCreated.skipped_stops.join(", ")}</p>
                 )}
               </div>
-            ))}
-            <button type="button" className="add-stop-btn" onClick={handleAddStop}>
-              ➕ Add Stop
-            </button>
-          </div>
-
-          {/* Destination */}
-          <div className="form-group">
-            <label>Destination</label>
-            <input
-              value={endPoint}
-              onChange={(e) => {
-                setEndPoint(e.target.value);
-                fetchSuggestions(e.target.value, setEndSuggestions, setEndLoading);
-              }}
-              placeholder="e.g., Airport"
-            />
-            {endLoading && <div className="loading">Loading...</div>}
-            {endSuggestions.length > 0 && (
-              <ul className="suggestions">
-                {endSuggestions.map((s, idx) => (
-                  <li
-                    key={idx}
-                    onClick={() =>
-                      handleSelectSuggestion(s, setEndPoint, null, null, setEndSuggestions)
-                    }
-                  >
-                    {highlightMatch(s.display_name, endPoint)}
+            </div>
+          )}
+          {can("dashboard") && (
+            <Panel
+              title="Existing routes"
+              subtitle={existing.status === "ok" ? `${routes.length} routes` : undefined}
+              status={existing.status === "idle" ? "loading" : existing.status}
+              onRetry={existing.reload}
+              isEmpty={routes.length === 0}
+              empty="No routes yet."
+            >
+              <ul className="route-list">
+                {routes.map((r) => (
+                  <li key={r.route_id}>
+                    <span className="route-list-name">{r.route_name}</span>
+                    <span className="route-list-path">{r.start_point} → {r.end_point}</span>
                   </li>
                 ))}
               </ul>
-            )}
-          </div>
-
-          <button type="submit" disabled={loading}>
-            {loading ? "Saving..." : "Add Route"}
-          </button>
-        </form>
-      </div>
-
-      {/* Routes List */}
-      {routes.length > 0 && (
-        <div className="routes-list">
-          <h2>Created Routes</h2>
-          <ul>
-            {routes.map((route, index) => (
-              <li key={index} className="route-item">
-                <span className="route-name">{route.route_name}</span>
-                <span className="route-path">
-                  {route.start_point} →{" "}
-                  {route.stops?.length > 0 && route.stops.join(" → ")} → {route.end_point}
-                </span>
-              </li>
-            ))}
-          </ul>
+            </Panel>
+          )}
         </div>
-      )}
-
-      <ToastContainer position="top-right" autoClose={3000} />
+      </div>
     </div>
   );
 };

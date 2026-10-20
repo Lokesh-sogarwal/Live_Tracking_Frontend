@@ -1,51 +1,32 @@
-/* Header Container */
 .header-logo {
-  display: flex;
+  display: inline-flex;
   align-items: center;
-  gap: 12px;
-  padding: 24px 20px;
-  justify-content: flex-start; /* Align left */
+  gap: var(--space-2);
+  text-decoration: none;
+  color: var(--sidebar-text);
+  min-width: 0;
 }
 
-/* Logo icon styling */
 .logo-icon {
-  font-size: 28px;
-  color: #fff;
-  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
-  width: 45px;
-  height: 45px;
-  border-radius: 12px;
-  display: flex;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 4px 10px rgba(37, 99, 235, 0.3);
-  transform: rotate(-5deg);
-  transition: transform 0.3s ease;
+  width: 34px;
+  height: 34px;
+  flex-shrink: 0;
+  border-radius: var(--radius-md);
+  background: var(--brand-rose);
+  color: #fff;
+  font-size: 1rem;
 }
 
-.header-logo:hover .logo-icon {
-  transform: rotate(0deg) scale(1.05);
-}
-
-/* Text styling */
 .logo-text {
-  display: flex;
-  flex-direction: column;
-  line-height: 1;
-}
-
-.logo-text span:first-child {
-  font-size: 1.2rem;
+  font-size: 1.05rem;
   font-weight: 700;
-  color: #1e293b; /* Slate-800 */
-  letter-spacing: -0.5px;
+  letter-spacing: -0.01em;
+  white-space: nowrap;
 }
 
 .logo-text .highlight {
-  font-size: 1.2rem;
-  font-weight: 700;
-  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  letter-spacing: -0.5px;
+  color: #e8b4c6;
 }

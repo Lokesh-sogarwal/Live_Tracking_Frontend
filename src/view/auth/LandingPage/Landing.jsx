@@ -1,281 +1,166 @@
 import React from "react";
-import { useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
+import {
+  FiArrowRight, FiBell, FiCalendar, FiCheck, FiClock, FiFileText, FiMap, FiMapPin, FiShield,
+} from "react-icons/fi";
+import { MdDirectionsBus } from "react-icons/md";
+import RouteIllustration from "../RouteIllustration";
+import PublicHeader from "./PublicHeader";
 import "./Landing.css";
 
+// Public landing page (route "/", logged-out visitors only — see PublicRoute in App.js).
+// Every claim below maps to a feature in this codebase; nothing here calls the API.
+const NAV = [
+  { href: "#features", label: "Features" },
+  { href: "#how-it-works", label: "How it works" },
+  { href: "#roles", label: "Who it's for" },
+  { to: "/explore", label: "Routes & times" },
+];
+
+const FEATURES = [
+  { icon: FiMapPin, title: "Live fleet tracking", text: "Buses report their position and the map shows where each one was last seen, flagging updates that have gone stale." },
+  { icon: FiCalendar, title: "Trips & schedules", text: "Plan schedules that pair a bus, a driver and a route, then follow each trip from not started to completed." },
+  { icon: FiMap, title: "Routes & stops", text: "Define routes with an origin, a destination and the stops in between. Passengers can search the routes available to them." },
+  { icon: MdDirectionsBus, title: "Buses & drivers", text: "Register the buses in your fleet and keep a directory of drivers alongside the trips they run." },
+  { icon: FiClock, title: "Delay & status monitoring", text: "Each trip carries a clear status — live, delayed, stale, not started or completed — so problems stand out." },
+  { icon: FiFileText, title: "Driver documents", text: "Drivers upload licence and ID documents; operators review them and mark each one verified or rejected." },
+  { icon: FiBell, title: "Notifications, chat & feedback", text: "In-app notifications, one-to-one messaging between users, and a feedback form that reaches the operations team." },
+  { icon: FiShield, title: "Role-based access", text: "Five roles see only the tools they need, and a superadmin controls which features each role can use." },
+];
+
+const STEPS = [
+  { title: "Sign in to your account", text: "Use the account your organisation gave you, or create a passenger account." },
+  { title: "Manage or explore trips", text: "Plan schedules and routes, or look up the buses and routes that matter to you — depending on your role." },
+  { title: "Stay informed", text: "Follow trip status on the live map and get notified about updates and messages." },
+];
+
+const ROLES = [
+  { name: "Superadmin", text: "Everything an admin can do, plus the permission matrix that decides which features each role can use." },
+  { name: "Admin", text: "Runs day-to-day operations: users, drivers, buses, routes, schedules, documents and feedback." },
+  { name: "Operator", text: "Coordinates trips — creates routes and schedules, registers buses and reviews driver documents." },
+  { name: "Driver", text: "Sees bus schedules and trips, uploads licence and ID documents, and messages the team." },
+  { name: "Passenger", text: "Finds available routes, follows buses on the live map, receives notifications and sends feedback." },
+];
+
 const Landing = () => {
-  const navigate = useNavigate();
-
-  const handleGetStarted = () => {
-    navigate("/signup");
-  };
-
-  const handleLogin = () => {
-    navigate("/login");
-  };
-
-  const handleViewDemo = () => {
-    const el = document.getElementById("landing-demo-section");
-    if (el) {
-      el.scrollIntoView({ behavior: "smooth" });
-    }
-  };
-
   return (
-    <div className="landing-page">
-      <div className="landing-nav">
-        <div className="landing-logo">RouteMaster</div>
-        <div className="landing-nav-actions">
-          <button className="landing-btn ghost" onClick={handleLogin}>
-            Login
-          </button>
-          <button className="landing-btn primary" onClick={handleGetStarted}>
-            Get Started
-          </button>
-        </div>
-      </div>
+    <div className="lp">
+      <a className="lp-skip" href="#main">Skip to content</a>
 
-      <div className="landing-hero">
-        <div className="landing-hero-left">
-          <h1>
-            Live Bus Tracking
-            <span> for Smarter Commutes</span>
-          </h1>
-          <p className="landing-subtitle">
-            Monitor buses in real time, manage routes and schedules, and keep
-            every passenger informed — all from a single, intuitive dashboard.
-          </p>
-          <div className="landing-cta-row">
-            <button
-              className="landing-btn primary cta-main"
-              onClick={handleGetStarted}
-            >
-              Get Started Free
-            </button>
-            <button
-              className="landing-btn ghost cta-secondary"
-              onClick={handleViewDemo}
-            >
-              View Live Demo
-            </button>
-          </div>
+      <PublicHeader links={NAV} />
 
-          <div className="landing-metrics">
-            <div className="metric-card">
-              <span className="metric-icon" aria-hidden="true">
-                ⏱
-              </span>
-              <div className="metric-text">
-                <span className="metric-value">24/7</span>
-                <span className="metric-label">Live tracking visibility</span>
-              </div>
-            </div>
-            <div className="metric-card">
-              <span className="metric-icon" aria-hidden="true">
-                ✅
-              </span>
-              <div className="metric-text">
-                <span className="metric-value">99%</span>
-                <span className="metric-label">On-time schedule accuracy</span>
-              </div>
-            </div>
-            <div className="metric-card">
-              <span className="metric-icon" aria-hidden="true">
-                📊
-              </span>
-              <div className="metric-text">
-                <span className="metric-value">360°</span>
-                <span className="metric-label">Route & User Insights</span>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div className="landing-hero-right">
-          <div className="scene-3d">
-            <div className="card-3d">
-              <div className="card-layer layer-main">
-                <h3>Live Tracking Map</h3>
-                <p>See every bus move in real time.</p>
-                <div className="card-pills">
-                  <span>Active buses</span>
-                  <span>Smart routes</span>
-                  <span>ETA alerts</span>
-                </div>
-
-                <div className="mini-chart">
-                  <div className="mini-chart-header">
-                    <span>Today's load</span>
-                    <span>Peak hours</span>
-                  </div>
-                  <div className="mini-chart-bars">
-                    <div className="mini-bar" style={{ "--h": "55%" }} />
-                    <div className="mini-bar" style={{ "--h": "80%" }} />
-                    <div className="mini-bar" style={{ "--h": "65%" }} />
-                    <div className="mini-bar" style={{ "--h": "90%" }} />
-                  </div>
-                </div>
-              </div>
-
-              <div className="card-layer layer-floating badge-top">
-                <span className="badge-title">Schedules</span>
-                <span className="badge-text">Instant timetable overview</span>
-              </div>
-
-              <div className="card-layer layer-floating badge-bottom">
-                <span className="badge-title">Notifications</span>
-                <span className="badge-text">Delay & arrival alerts</span>
-              </div>
-
-              <div className="orbit-dot orbit-dot-1" />
-              <div className="orbit-dot orbit-dot-2" />
-              <div className="orbit-dot orbit-dot-3" />
-            </div>
-          </div>
-
-          <div className="widget-stack">
-            <div className="widget-card primary-widget">
-              <div className="widget-header">
-                <span className="widget-title">Fleet overview</span>
-                <span className="widget-pill">Live</span>
-              </div>
-              <div className="widget-stats-row">
-                <div className="widget-stat">
-                  <span className="widget-stat-label">Active buses</span>
-                  <span className="widget-stat-value">42</span>
-                </div>
-                <div className="widget-stat">
-                  <span className="widget-stat-label">Routes running</span>
-                  <span className="widget-stat-value">18</span>
-                </div>
-                <div className="widget-stat">
-                  <span className="widget-stat-label">On-time</span>
-                  <span className="widget-stat-value">96%</span>
-                </div>
-              </div>
-            </div>
-
-            <div className="widget-card secondary-widget">
-              <div className="widget-header">
-                <span className="widget-title">Today at a glance</span>
-              </div>
-              <div className="widget-tags">
-                <span>Campus shuttle</span>
-                <span>Employee transit</span>
-                <span>Student buses</span>
-              </div>
-              <p className="widget-description">
-                A single control center for routes, buses, drivers, users,
-                notifications and feedback — mirroring what you see inside the
-                dashboard.
+      <main id="main">
+        <section id="top" className="lp-hero">
+          <div className="lp-container lp-hero-grid">
+            <div className="lp-hero-copy">
+              <p className="lp-eyebrow">Live Tracking &amp; Transport Management System</p>
+              <h1>Know where every journey stands.</h1>
+              <p className="lp-lead">
+                Track your fleet, manage trips, monitor delays and coordinate transport operations through one
+                connected platform.
               </p>
+              <div className="lp-cta-row">
+                <Link to="/login" className="lp-btn lp-btn-primary lp-btn-lg">
+                  Get started — sign in <FiArrowRight aria-hidden="true" />
+                </Link>
+                <Link to="/explore" className="lp-btn lp-btn-secondary lp-btn-lg">See routes &amp; times</Link>
+              </div>
+              <ul className="lp-points">
+                <li><FiCheck aria-hidden="true" /> Bus positions on a shared live map</li>
+                <li><FiCheck aria-hidden="true" /> Trips marked live, delayed or completed</li>
+                <li><FiCheck aria-hidden="true" /> Tools tailored to each role</li>
+              </ul>
+            </div>
+            <div className="lp-hero-visual">
+              <RouteIllustration />
             </div>
           </div>
-        </div>
-      </div>
+        </section>
 
-      <section className="landing-trust">
-        <p className="trust-title">Trusted by campuses and transport teams</p>
-        <div className="trust-logos" aria-label="Trusted by sample customers">
-          <span className="trust-logo">CampusOne</span>
-          <span className="trust-logo">MetroConnect</span>
-          <span className="trust-logo">CityLine</span>
-          <span className="trust-logo">TransitPlus</span>
-        </div>
-      </section>
-
-      <section id="landing-demo-section" className="landing-section features">
-        <h2>Why this platform?</h2>
-        <p className="section-subtitle">
-          Designed for transport admins, drivers, and passengers who need
-          reliable, real-time information.
-        </p>
-        <div className="features-grid">
-          <div className="feature-card">
-            <h3>Real-time Bus Locations</h3>
-            <p>
-              Track every bus with live GPS updates, so you always know where
-              your fleet is and when it will arrive.
-            </p>
-          </div>
-          <div className="feature-card">
-            <h3>Smart Routes & Schedules</h3>
-            <p>
-              Create, edit, and monitor routes and schedules with an interface
-              tailored for daily operations.
-            </p>
-          </div>
-          <div className="feature-card">
-            <h3>Passenger Experience</h3>
-            <p>
-              Share accurate ETAs, reduce wait times, and send instant
-              notifications for delays or route changes.
-            </p>
-          </div>
-          <div className="feature-card">
-            <h3>Insights & Feedback</h3>
-            <p>
-              Analyse usage, collect feedback, and continuously improve
-              reliability and safety for everyone on the road.
-            </p>
-          </div>
-        </div>
-      </section>
-
-      <section id="about-section" className="landing-section info">
-        <div className="info-grid">
-          <div className="info-block">
-            <h3>About the System</h3>
-            <p>
-              This platform centralises live tracking, routes, buses, drivers,
-              users, notifications, and feedback into one modern web
-              application. It is built to support campuses, institutions, and
-              organisations that manage their own fleets.
-            </p>
-          </div>
-          <div className="info-block">
-            <h3>Who is it for?</h3>
-            <p>
-              Transport administrators, dispatch teams, and supervisors use the
-              dashboard to manage operations, while passengers and drivers get
-              clear, reliable updates on trips and schedules.
-            </p>
-          </div>
-          <div className="info-block">
-            <h3>Key Modules</h3>
-            <ul>
-              <li>Live bus tracking & route visualisation</li>
-              <li>Route, bus, driver and user management</li>
-              <li>Schedules, notifications and chat support</li>
-              <li>Feedback and performance analytics</li>
+        <section id="features" className="lp-section" aria-labelledby="features-title">
+          <div className="lp-container">
+            <div className="lp-section-head">
+              <p className="lp-eyebrow">Features</p>
+              <h2 id="features-title">Everything your transport team works with, in one place</h2>
+              <p>From the live map to driver paperwork, each part of the operation has a home.</p>
+            </div>
+            <ul className="lp-features">
+              {FEATURES.map(({ icon: Icon, title, text }) => (
+                <li key={title} className="lp-feature">
+                  <span className="lp-feature-icon" aria-hidden="true"><Icon /></span>
+                  <h3>{title}</h3>
+                  <p>{text}</p>
+                </li>
+              ))}
             </ul>
           </div>
-        </div>
-      </section>
+        </section>
 
-      <footer className="landing-footer">
-        <span className="footer-copy">
-          &copy; {new Date().getFullYear()} RouteMaster Live Tracking. All rights
-          reserved.
-        </span>
-        <nav className="footer-nav" aria-label="Footer navigation">
-          <a href="#about-section" className="footer-link">
-            About
-          </a>
-          <a href="#contact" className="footer-link">
-            Contact
-          </a>
-          <a href="#privacy" className="footer-link">
-            Privacy Policy
-          </a>
-          <a
-            href="https://github.com"
-            target="_blank"
-            rel="noreferrer"
-            className="footer-link"
-          >
-            GitHub
-          </a>
-        </nav>
+        <section id="how-it-works" className="lp-section lp-section-alt" aria-labelledby="how-title">
+          <div className="lp-container">
+            <div className="lp-section-head">
+              <p className="lp-eyebrow">How it works</p>
+              <h2 id="how-title">Three steps from sign-in to a clear picture</h2>
+            </div>
+            <ol className="lp-steps">
+              {STEPS.map((s, i) => (
+                <li key={s.title} className="lp-step">
+                  <span className="lp-step-num" aria-hidden="true">{i + 1}</span>
+                  <h3>{s.title}</h3>
+                  <p>{s.text}</p>
+                </li>
+              ))}
+            </ol>
+          </div>
+        </section>
+
+        <section id="roles" className="lp-section" aria-labelledby="roles-title">
+          <div className="lp-container">
+            <div className="lp-section-head">
+              <p className="lp-eyebrow">Who it's for</p>
+              <h2 id="roles-title">Built around the people who keep transport moving</h2>
+              <p>Five roles, each with its own view. These are the defaults — a superadmin can adjust them.</p>
+            </div>
+            <ul className="lp-roles">
+              {ROLES.map((r) => (
+                <li key={r.name} className="lp-role">
+                  <h3>{r.name}</h3>
+                  <p>{r.text}</p>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </section>
+
+        <section className="lp-cta" aria-labelledby="cta-title">
+          <div className="lp-container lp-cta-inner">
+            <h2 id="cta-title">A clearer view of every journey starts here.</h2>
+            <p>Sign in to see the trips, buses and updates that matter to you.</p>
+            <div className="lp-cta-row">
+              <Link to="/login" className="lp-btn lp-btn-light lp-btn-lg">Sign in to your account</Link>
+              <Link to="/signup" className="lp-btn lp-btn-outline-light lp-btn-lg">Create a passenger account</Link>
+            </div>
+          </div>
+        </section>
+      </main>
+
+      <footer className="lp-footer">
+        <div className="lp-container lp-footer-inner">
+          <div className="lp-footer-brand">
+            <span className="lp-brand-mark" aria-hidden="true"><MdDirectionsBus /></span>
+            <span>Live Tracking &amp; Transport Management System</span>
+          </div>
+          <nav aria-label="Footer">
+            <ul>
+              {NAV.map((n) => (
+                <li key={n.label}>{n.to ? <Link to={n.to}>{n.label}</Link> : <a href={n.href}>{n.label}</a>}</li>
+              ))}
+              <li><Link to="/login">Sign in</Link></li>
+              <li><Link to="/signup">Create account</Link></li>
+            </ul>
+          </nav>
+          <p className="lp-copy">&copy; {new Date().getFullYear()} Live Tracking &amp; Transport Management System</p>
+        </div>
       </footer>
     </div>
   );

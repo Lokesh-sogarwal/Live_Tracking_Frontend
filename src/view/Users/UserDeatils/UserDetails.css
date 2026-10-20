@@ -4,7 +4,10 @@
 ===================== */
 
 
-h2 {
+/* Scoped (was a global h2/button rule that restyled the whole app, including the shell).
+   Still applies to page content, modals and auth screens, so existing pages look the same;
+   excluded from the redesigned dashboard and live tracking views. */
+:where(.app-content, .ReactModal__Content, .login-main) h2:not(:where(.dash, .lt-page) h2) {
   text-align: center;
   /* margin-bottom: 20px; */
   font-size: 24px;
@@ -15,7 +18,7 @@ h2 {
 /* =====================
    Buttons
 ===================== */
-button {
+:where(.app-content, .ReactModal__Content, .login-main) button:not(:where(.dash, .lt-page) button) {
   background-color: #4e73df;
   color: #fff;
   padding: 8px 14px;
@@ -27,18 +30,18 @@ button {
   transition: all 0.2s ease;
 }
 
-button:hover {
+:where(.app-content, .ReactModal__Content, .login-main) button:not(:where(.dash, .lt-page) button):hover {
   background-color: #2e59d9;
   transform: translateY(-1px);
 }
 
-button:disabled {
+:where(.app-content, .ReactModal__Content, .login-main) button:not(:where(.dash, .lt-page) button):disabled {
   background-color: #a5b1d4;
   cursor: not-allowed;
 }
 
 /* Create button above table */
-button[type="button"]:first-child {
+:where(.app-content, .ReactModal__Content, .login-main) button[type="button"]:first-child:not(:where(.dash, .lt-page) button) {
   margin-bottom: 15px;
 }
 

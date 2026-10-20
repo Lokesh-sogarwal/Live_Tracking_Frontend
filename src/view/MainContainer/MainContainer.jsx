@@ -26,7 +26,8 @@ const MainContainer = () => {
 
         if (user_uuid) {
             const socket = io(API_BASE_URL, {
-                transports: ["websocket"]
+                transports: ["websocket"],
+                auth: { token },
             });
 
             socket.on("connect", () => {
@@ -52,7 +53,6 @@ const MainContainer = () => {
         }
     }, []);
 
-    console.log(userRoutes);
   return (
     <Layout>
       <Routes>
@@ -63,6 +63,7 @@ const MainContainer = () => {
             element={
               <PermissionGate
                 permissionKey={item.permissionKey}
+                rule={item.rule}
                 requireSuperadmin={!!item.requireSuperadmin}
               >
                 {item.element}

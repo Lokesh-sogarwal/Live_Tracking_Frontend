@@ -1,0 +1,84 @@
+/* Assistant page. Shared primitives: src/styles/components.css */
+.bot-card {
+  display: flex;
+  flex-direction: column;
+  height: min(640px, calc(100dvh - var(--topbar-height) - 200px));
+  min-height: 360px;
+  overflow: hidden;
+}
+.bot-log {
+  flex: 1;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--space-5);
+}
+.bot-empty {
+  margin: auto;
+}
+.bot-msg {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-2);
+  max-width: 80%;
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-lg);
+  font-size: var(--text-sm);
+  line-height: 1.5;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.bot-msg-user {
+  align-self: flex-end;
+  background: var(--brand-plum);
+  color: #fff;
+  border-bottom-right-radius: var(--radius-sm);
+}
+.bot-msg-assistant {
+  align-self: flex-start;
+  background: var(--color-bg);
+  color: var(--color-text);
+  border-bottom-left-radius: var(--radius-sm);
+}
+.bot-msg-error {
+  align-self: flex-start;
+  background: var(--status-error-bg);
+  color: var(--status-error-fg);
+}
+.bot-msg-error svg {
+  flex-shrink: 0;
+  margin-top: 3px;
+}
+.bot-typing span {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--color-text-muted);
+  animation: bot-blink 1s infinite alternate;
+}
+.bot-typing span:nth-child(2) { animation-delay: 0.2s; }
+.bot-typing span:nth-child(3) { animation-delay: 0.4s; }
+@keyframes bot-blink {
+  from { opacity: 0.25; }
+  to { opacity: 1; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .bot-typing span { animation: none; }
+}
+.bot-composer {
+  display: flex;
+  gap: var(--space-2);
+  padding: var(--space-3) var(--space-4);
+  border-top: 1px solid var(--color-border);
+  background: var(--color-surface);
+}
+.bot-composer .ui-input {
+  flex: 1;
+  min-width: 0;
+}
+@media (max-width: 600px) {
+  .bot-msg { max-width: 92%; }
+  .bot-log { padding: var(--space-4); }
+  .bot-send-label { display: none; }
+}

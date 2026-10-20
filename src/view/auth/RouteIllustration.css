@@ -1,0 +1,125 @@
+/* Public-page illustration (Landing + Login). All selectors are prefixed with .ri. */
+.ri {
+  margin: 0;
+  width: 100%;
+  max-width: 520px;
+}
+
+.ri-card {
+  background: #fff;
+  border: 1px solid var(--color-border);
+  border-radius: 20px;
+  box-shadow: 0 24px 60px rgba(44, 44, 44, 0.12), 0 2px 6px rgba(44, 44, 44, 0.05);
+  padding: 16px;
+}
+
+.ri-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.ri-title {
+  font-weight: 600;
+  font-size: var(--text-md);
+  color: var(--brand-charcoal);
+}
+
+.ri-tag {
+  font-size: var(--text-xs);
+  font-weight: 500;
+  color: var(--brand-plum);
+  background: var(--color-accent-soft);
+  border-radius: 999px;
+  padding: 3px 10px;
+}
+
+.ri-map {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.ri-ground { fill: #eef0f0; }
+.ri-streets path { stroke: #ffffff; stroke-width: 7; fill: none; }
+.ri-streets .ri-streets-minor { stroke-width: 3; }
+.ri-park { fill: #dfe7df; }
+.ri-route-a,
+.ri-route-b { fill: none; stroke-linecap: round; }
+.ri-route-a { stroke: var(--brand-plum); stroke-width: 4; }
+.ri-route-b { stroke: #9a9ca0; stroke-width: 3; stroke-dasharray: 7 7; }
+.ri-stop { fill: #fff; stroke: var(--brand-charcoal); stroke-width: 2; }
+
+.ri-bus-dot { fill: var(--brand-rose); stroke: #fff; stroke-width: 2.5; }
+.ri-bus.is-delayed .ri-bus-dot { fill: #b87a00; }
+.ri-bus.is-idle .ri-bus-dot { fill: #7c7f84; }
+.ri-bus-pulse { fill: var(--brand-rose); opacity: 0.18; transform-origin: center; transform-box: fill-box; }
+.ri-bus.is-delayed .ri-bus-pulse { fill: #b87a00; }
+.ri-bus-label { fill: var(--brand-charcoal); }
+.ri-bus text { fill: #fff; font-size: 10px; font-weight: 600; font-family: var(--font-sans); }
+
+@media (prefers-reduced-motion: no-preference) {
+  .ri-bus-pulse { animation: ri-pulse 2.4s ease-out infinite; }
+}
+
+@keyframes ri-pulse {
+  0% { transform: scale(0.7); opacity: 0.35; }
+  100% { transform: scale(1.6); opacity: 0; }
+}
+
+.ri-trips {
+  list-style: none;
+  margin: 12px 0 0;
+  padding: 0;
+  display: grid;
+  gap: 8px;
+}
+
+.ri-trips li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 12px;
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  background: var(--brand-mist);
+}
+
+.ri-trip-text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  font-size: var(--text-sm);
+}
+
+.ri-trip-text strong { color: var(--brand-charcoal); font-weight: 600; }
+.ri-trip-text span {
+  color: var(--color-text-muted);
+  font-size: var(--text-xs);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ri-chip {
+  flex-shrink: 0;
+  font-size: var(--text-xs);
+  font-weight: 600;
+  border-radius: 999px;
+  padding: 3px 10px;
+}
+
+.ri-chip-live { color: var(--status-live-fg); background: var(--status-live-bg); }
+.ri-chip-delayed { color: var(--status-delayed-fg); background: var(--status-delayed-bg); }
+.ri-chip-notstarted { color: var(--status-notstarted-fg); background: var(--status-notstarted-bg); }
+
+.ri-caption {
+  margin-top: 10px;
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+  text-align: center;
+}
+
+.ri-compact .ri-card { padding: 12px; border-radius: 16px; }

@@ -3,10 +3,11 @@ import { Navigate, useLocation } from "react-router-dom";
 import { jwtDecode } from "jwt-decode";
 import { usePermissions } from "../context/PermissionsContext";
 import { normalizeRole } from "./legacyAccess";
+import { allowed } from "./access";
 
-const PermissionGate = ({ permissionKey, requireSuperadmin = false, children }) => {
+const PermissionGate = ({ permissionKey, rule, requireSuperadmin = false, children }) => {
   const token = localStorage.getItem("token");
-  const { isLoading, can } = usePermissions();
+  const { isLoading, ready, can, role: serverRole } = usePermissions();
   const location = useLocation();
 
   let role = "";
@@ -24,14 +25,21 @@ const PermissionGate = ({ permissionKey, requireSuperadmin = false, children }) 
     }
   }
 
-  // While loading, avoid redirect flicker; show the page (or keep blank).
-  if (isLoading) {
-    return children;
+  // Until permissions are known, render nothing from the page itself: rendering it would
+  // mount a possibly restricted screen and fire its API requests before the redirect.
+  if (!ready || isLoading) {
+    return (
+      <div className="ui-state" aria-busy="true">
+        Loading…
+      </div>
+    );
   }
 
-  if (permissionKey) {
-    // Plan gating + explicit permission gating (superadmin bypass lives inside can())
-    if (!can(permissionKey)) {
+  if (permissionKey || rule) {
+    // Feature permission, or the full access rule (permission + minimum role) for pages
+    // whose API also requires a minimum role on the server.
+    const permitted = rule ? allowed(rule, can, serverRole || role) : can(permissionKey);
+    if (!permitted) {
       // Avoid redirect loops if the user is blocked from dashboard.
       const currentPath = location?.pathname || "";
       const fallback = currentPath.startsWith("/dashboard") ? "/profile" : "/dashboard";

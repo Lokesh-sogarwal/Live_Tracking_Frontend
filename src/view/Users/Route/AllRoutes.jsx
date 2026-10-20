@@ -1,6 +1,9 @@
 import React, { useEffect, useState } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { FiArrowRight, FiSearch } from 'react-icons/fi';
+import { FaBusAlt } from 'react-icons/fa';
 import './AllRoute.css';
+import { PageHeader, LoadingState, EmptyState } from '../../../Components/ui';
 import API_BASE_URL from '../../../utils/config';
 
 const AllRoutes = () => {
@@ -147,10 +150,9 @@ const AllRoutes = () => {
                     arrival: extractTime(sch.end_time),
                     fullDeparture: sch.start_time,
                     fullArrival: sch.end_time,
-                    price: sch.price || 44,
                     status: getStatusLabel(sch),
                     rawStatus: sch.status || 'on_time',
-                    type: 'AC Seater',
+                    driverName: sch.driver_name || null,
                     date: sch.date || null,
                     parentRouteObj: sch.parentRouteObj,
                     rawSchedule: sch,
@@ -225,112 +227,90 @@ const AllRoutes = () => {
         return new Date(dateString).toLocaleDateString(undefined, options);
     };
 
-    const getStatusTagClass = (status) => {
-        // Normalize status string: replace underscores with spaces, lower case
-        const normalizedStatus = status?.replace(/_/g, ' ').toLowerCase();
-
-        switch (normalizedStatus) {
-            case 'on time': return 'on_time';
-            case 'delayed': return 'delayed';
-            case 'cancelled': return 'cancelled';
-            case 'completed': return 'completed';
-            case 'not started yet':
-            case 'yet to start':
-                return 'not_started';
-            case 'running': return 'on_time';
-            default: return '';
-        }
+    // Maps the display label to a status chip (text label always shown with the colour).
+    const chipFor = (status) => {
+        const st = String(status || '').replace(/_/g, ' ').toLowerCase();
+        if (st === 'delayed') return 'delayed';
+        if (st === 'cancelled') return 'error';
+        if (st === 'completed') return 'completed';
+        if (st === 'running') return 'live';
+        return 'not_started';
     };
 
     return (
-        <div className="main-container">
-            <div className="routes-container">
-                {/* Header Info Card */}
-                <div className="route-info">
-                    <div className="route-info-item">
-                        <span className="route-info-label">From</span>
-                        <span className="route-info-value">{searchParams.source || '...'}</span>
-                    </div>
-                    {/* Arrow Divider */}
-                    <div style={{ color: '#cbd5e1' }}>
-                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14" /><path d="m12 5 7 7-7 7" /></svg>
-                    </div>
-                    <div className="route-info-item">
-                        <span className="route-info-label">To</span>
-                        <span className="route-info-value">{searchParams.destination || '...'}</span>
-                    </div>
-                    <div className="route-info-item">
-                        <span className="route-info-label">Journey Date</span>
-                        <span className="route-info-value">{formatDate(searchParams.date)}</span>
-                    </div>
-                    <div className="route-info-item">
-                        <span className="route-info-label">Total Buses</span>
-                        <span className="route-info-value">{loading ? '...' : schedules.length}</span>
-                    </div>
-                </div>
+        <div className="ui-page">
+            <PageHeader
+                title="Available buses"
+                description={
+                    searchParams.source || searchParams.destination
+                        ? `${searchParams.source || 'Any start'} → ${searchParams.destination || 'Any destination'}`
+                        : 'Search for a route to see its buses.'
+                }
+                actions={
+                    <Link to="/live_tracking?view=search" className="ui-btn ui-btn-secondary">
+                        <FiSearch aria-hidden="true" /> Change search
+                    </Link>
+                }
+            />
 
-                {/* List View of Schedules */}
-                {loading ? (
-                    <div className="no-route" style={{ textAlign: 'center', marginTop: '50px', color: '#64748b' }}>
-                        <h3>Loading routes...</h3>
-                    </div>
-                ) : schedules.length > 0 ? (
-                    <div className="schedule-cards">
+            {loading ? (
+                <div className="ui-card ui-card-body"><LoadingState /></div>
+            ) : schedules.length > 0 ? (
+                <>
+                    <p className="ar-count" role="status">{schedules.length} bus{schedules.length > 1 ? 'es' : ''} found. Select one to track it.</p>
+                    <ul className="ar-list">
                         {schedules.map((schedule) => (
-                            <div
-                                key={schedule.id}
-                                className="schedule-card"
-                                onClick={() => handleCardClick(schedule)}
-                            >
-                                {/* Left: Bus Info */}
-                                <div className="card-left">
-                                    <div className="bus-icon-container">
-                                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                            <path d="M8 6v6" /><path d="M15 6v6" /><path d="M2 12h19.6" />
-                                            <path d="M18 18h3s.5-1.7.8-2.8c.1-.4.2-.8.2-1.2 0-.4-.1-.8-.2-1.2l-1.4-5C20.1 6.8 19.1 6 18 6H4a2 2 0 0 0-2 2v10h3" />
-                                            <circle cx="7" cy="18" r="2" /><path d="M9 18h5" /><circle cx="16" cy="18" r="2" />
-                                        </svg>
-                                    </div>
-                                    <div className="bus-details">
-                                        <h3>{schedule.busName}</h3>
-                                        <span className="bus-type">{schedule.type} • Route {schedule.routeNo}</span>
-                                        <span className="bus-date">{schedule.date ? formatDate(schedule.date) : formatDate(searchParams.date)}</span>
-                                    </div>
-                                </div>
-
-                                {/* Center: Timing */}
-                                <div className="card-center">
-                                    <div className="time-group">
-                                        <span className="time">{schedule.arrival}</span>
-                                        <span className="time-label">Departure</span>
-                                    </div>
-                                    <div className="duration-visual">
-                                        <span className="time-label">{getDuration(schedule.fullArrival, schedule.fullDeparture)}</span>
-                                        <div className="visual-line"></div>
-                                    </div>
-                                    <div className="time-group">
-                                        <span className="time">{schedule.departure}</span>
-                                        <span className="time-label">Arrival</span>
-                                    </div>
-                                </div>
-
-                                {/* Right: Price & Status */}
-                                <div className="card-right">
-                                    <div className="price">₹{schedule.price}</div>
-                                    <div className={`status-badge ${getStatusTagClass(schedule.status)}`}>
-                                        {schedule.status}
-                                    </div>
-                                </div>
-                            </div>
+                            <li key={schedule.id}>
+                                <button
+                                    type="button"
+                                    className="ar-card ui-card"
+                                    onClick={() => handleCardClick(schedule)}
+                                    disabled={schedule.status === 'Cancelled'}
+                                    aria-label={`${schedule.busName}, ${schedule.routeNo}, departs ${schedule.arrival}, ${schedule.status}`}
+                                >
+                                    <span className="ar-bus">
+                                        <span className="ar-bus-icon" aria-hidden="true"><FaBusAlt /></span>
+                                        <span>
+                                            <span className="ar-bus-number">{schedule.busName}</span>
+                                            <span className="ar-meta">{schedule.routeNo}</span>
+                                            <span className="ar-meta">
+                                                {schedule.date ? formatDate(schedule.date) : formatDate(searchParams.date)}
+                                                {schedule.driverName ? ` · ${schedule.driverName}` : ''}
+                                            </span>
+                                        </span>
+                                    </span>
+                                    <span className="ar-times">
+                                        <span className="ar-time">
+                                            <strong>{schedule.arrival}</strong>
+                                            <span>Departs</span>
+                                        </span>
+                                        <span className="ar-duration">
+                                            <span>{getDuration(schedule.fullArrival, schedule.fullDeparture)}</span>
+                                            <FiArrowRight aria-hidden="true" />
+                                        </span>
+                                        <span className="ar-time">
+                                            <strong>{schedule.departure}</strong>
+                                            <span>Arrives</span>
+                                        </span>
+                                    </span>
+                                    <span className={`ui-chip ui-chip-${chipFor(schedule.status)}`}>{schedule.status}</span>
+                                </button>
+                            </li>
                         ))}
-                    </div>
-                ) : (
-                    <div className="no-route" style={{ textAlign: 'center', marginTop: '50px', color: '#64748b' }}>
-                        <h3>{error ? 'Search Failed' : 'No buses found'}</h3>
-                        <p>{error ? 'Unable to connect to the server.' : 'We couldn\'t find any buses for your search criteria.'}</p>
-                    </div>
-                )}
-            </div>
+                    </ul>
+                </>
+            ) : (
+                <div className="ui-card">
+                    {error ? (
+                        <EmptyState title="Search failed">Could not reach the server. Try again in a moment.</EmptyState>
+                    ) : (
+                        <EmptyState title="No buses found">
+                            No upcoming or running buses match this search.
+                            <Link to="/live_tracking?view=search" className="ui-btn ui-btn-primary">Search again</Link>
+                        </EmptyState>
+                    )}
+                </div>
+            )}
         </div>
     );
 };

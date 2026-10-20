@@ -2,25 +2,14 @@ import React, { useEffect, useState } from "react";
 import "./all.css";
 import API_BASE_URL from "../../../../utils/config";
 
+import { toLocalYYYYMMDD } from "../../../../utils/dates";
+
 const AllSchedules = ({ selectedDate }) => {
   const [schedules, setSchedules] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  const toYYYYMMDD = (d) => {
-    if (!d) return "";
-    if (typeof d === "string") {
-      // If already in YYYY-MM-DD, keep it.
-      if (/^\d{4}-\d{2}-\d{2}$/.test(d)) return d;
-      const dd = new Date(d);
-      return isNaN(dd.getTime()) ? "" : dd.toISOString().slice(0, 10);
-    }
-    if (d instanceof Date) {
-      return isNaN(d.getTime()) ? "" : d.toISOString().slice(0, 10);
-    }
-    const dd = new Date(d);
-    return isNaN(dd.getTime()) ? "" : dd.toISOString().slice(0, 10);
-  };
+  const toYYYYMMDD = (d) => (d ? toLocalYYYYMMDD(d) : "");
 
 
   const fetchSchedules = async () => {
@@ -35,6 +24,7 @@ const AllSchedules = ({ selectedDate }) => {
         method: "GET",
         headers: {
           "Content-Type": "application/json",
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
         },
       });
       const data = await res.json();

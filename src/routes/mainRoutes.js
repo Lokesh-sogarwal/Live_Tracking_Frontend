@@ -17,6 +17,8 @@ import BusSchedule from '../view/Users/Schedules/schedule';
 import Uploaded_documents from '../view/Users/Upload_File/Uploaded_documents';
 import Feedback from '../view/Users/FeedBacks/feedback';
 import ShowFeeback from '../view/Users/FeedBacks/show_feedback';
+import FeedbackDetail from '../view/Users/FeedBacks/FeedbackDetail';
+import MyFeedback from '../view/Users/FeedBacks/MyFeedback';
 import ChatBot from '../view/Users/Chatbot/chatbot';
 import Chat from '../view/Chatbox/chat';
 import Settings from '../view/Users/Settings/setting';
@@ -24,6 +26,7 @@ import EditProfile from '../view/Users/Settings/editProfile';
 import RegisterBus from '../view/Users/Bus/RegisterBus';
 import Notification from '../view/Users/Notification/Notification';
 import PermissionsPage from '../view/Users/Permissions/Permissions';
+import Applications from '../view/Onboarding/Applications';
 
 export const userRoutes = [
   {
@@ -92,7 +95,8 @@ export const userRoutes = [
     id: 17,
     path: "create_routes",
     element: <BusRoute />,
-    permissionKey: "create_routes"
+    permissionKey: "create_routes",
+    rule: "createRoute"
   },{
     id: 18,
     path: "all_routes",
@@ -120,7 +124,8 @@ export const userRoutes = [
     id: 22,
     path:"Uploded_documents",
     element:<Uploaded_documents/>,
-    permissionKey: "Uploded_documents"
+    permissionKey: "Uploded_documents",
+    rule: "reviewDocuments"
   },
   {
     id: 23,
@@ -132,7 +137,8 @@ export const userRoutes = [
     id: 24,
     path:"Feedbacks",
     element:<ShowFeeback/>,
-    permissionKey: "Feedbacks"
+    permissionKey: "Feedbacks",
+    rule: "feedbackInbox"
   },
   {
     id: 25,
@@ -162,7 +168,8 @@ export const userRoutes = [
     id: 29,
     path:"register_bus",
     element:<RegisterBus/>,
-    permissionKey: "register_bus"
+    permissionKey: "register_bus",
+    rule: "registerBus"
   },
   {
     id: 30,
@@ -176,6 +183,26 @@ export const userRoutes = [
     element: <PermissionsPage />,
     permissionKey: "permissions",
     requireSuperadmin: true
+  },
+  {
+    id: 32,
+    path: "applications",
+    element: <Applications />,
+    permissionKey: "dashboard",
+    rule: "reviewApplications"
+  },
+  {
+    id: 33,
+    path: "Feedbacks/:id",
+    element: <FeedbackDetail />,
+    permissionKey: "Feedbacks",
+    rule: "feedbackInbox"
+  },
+  {
+    id: 34,
+    path: "my_feedback/:id",
+    element: <MyFeedback />,
+    permissionKey: "Feedback"
   }
 ];
 

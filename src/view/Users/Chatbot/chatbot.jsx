@@ -1,218 +1,99 @@
-import { useState, useRef, useEffect } from "react";
+import { useEffect, useRef, useState } from "react";
+import { FiSend, FiAlertCircle, FiCpu } from "react-icons/fi";
+import "./chatbot.css";
 import API_BASE_URL from "../../../utils/config";
+import { PageHeader } from "../../../Components/ui";
 
-export default function Chat() {
+// Talks to POST /chatbot/chat. The current backend answers 501 (not ported), so the page
+// says the assistant is unavailable instead of inventing replies.
+export default function ChatBot() {
   const [input, setInput] = useState("");
-  const [messages, setMessages] = useState([]);
-  const [history, setHistory] = useState([]);
+  const [messages, setMessages] = useState([]); // { role: "user" | "assistant" | "error", content }
   const [loading, setLoading] = useState(false);
+  const [unavailable, setUnavailable] = useState(false);
+  const endRef = useRef(null);
 
-  const chatEndRef = useRef(null);
-
-  // Auto-scroll to bottom
   useEffect(() => {
-    chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages]);
+    endRef.current?.scrollIntoView({ block: "end" });
+  }, [messages, loading]);
 
-  const sendMsg = async () => {
-    if (!input.trim()) {
-      setMessages((prev) => [
-        ...prev,
-        { role: "assistant", content: "⚠ Please type something." },
-      ]);
-      return;
-    }
-
-    const userMessage = input;
+  const send = async (e) => {
+    e.preventDefault();
+    const text = input.trim();
+    if (!text || loading || unavailable) return;
+    const history = messages.filter((m) => m.role !== "error");
+    const userMsg = { role: "user", content: text };
+    setMessages((prev) => [...prev, userMsg]);
     setInput("");
-
-    const newUserMsg = { role: "user", content: userMessage };
-    setMessages((prev) => [...prev, newUserMsg]);
-    const updatedHistory = [...history, newUserMsg];
-    setHistory(updatedHistory);
-
     setLoading(true);
-
     try {
-      const token = localStorage.getItem("token");
-
       const res = await fetch(`${API_BASE_URL}/chatbot/chat`, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          message: userMessage,
-          history: updatedHistory,
-        }),
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${localStorage.getItem("token")}` },
+        body: JSON.stringify({ message: text, history: [...history, userMsg] }),
       });
-
-      const data = await res.json();
-
-      if (!res.ok) {
-        throw new Error(data.error || "Server error");
+      const data = await res.json().catch(() => ({}));
+      if (res.status === 501) {
+        setUnavailable(true);
+        setMessages((prev) => [...prev, { role: "error", content: "The assistant is not available on this server, so your message was not answered." }]);
+      } else if (!res.ok || typeof data.reply !== "string") {
+        setMessages((prev) => [...prev, { role: "error", content: data.error || "The assistant could not answer. Try again." }]);
+      } else {
+        setMessages((prev) => [...prev, { role: "assistant", content: data.reply }]);
       }
-
-      const botMessage = { role: "assistant", content: data.reply };
-
-      setMessages((prev) => [...prev, botMessage]);
-      setHistory((prev) => [...prev, botMessage]);
-    } catch (err) {
-      setMessages((prev) => [
-        ...prev,
-        { role: "assistant", content: "❌ Server connection failed!" },
-      ]);
+    } catch {
+      setMessages((prev) => [...prev, { role: "error", content: "Could not reach the server. Check your connection and try again." }]);
+    } finally {
+      setLoading(false);
     }
-
-    setLoading(false);
   };
 
   return (
-    <div style={styles.page}>
-      <div style={styles.chatContainer}>
-        <h2 style={styles.title}>AI Chat Assistant</h2>
-
-        <div style={styles.chatBox}>
-          {/* Show all messages */}
-          {messages.map((msg, i) => (
-            <div
-              key={i}
-              style={msg.role === "user" ? styles.userBubble : styles.botBubble}
-            >
-              {msg.content}
-            </div>
-          ))}
-
-          {/* Animated typing indicator */}
-          {loading && (
-            <div style={styles.botBubble}>
-              <div className="dot-flashing"></div>
+    <div className="ui-page ui-page-narrow bot-page">
+      <PageHeader title="Assistant" description="Ask questions about routes, schedules and trips." />
+      {unavailable && (
+        <div className="ui-banner ui-banner-warning" role="status">
+          <FiAlertCircle aria-hidden="true" />
+          <span>The AI assistant is not enabled on this server. Use Live Tracking or Bus Schedule for trip information, or Chat to reach staff.</span>
+        </div>
+      )}
+      <section className="ui-card bot-card" aria-label="Conversation">
+        <div className="bot-log" role="log" aria-live="polite">
+          {messages.length === 0 && (
+            <div className="ui-state bot-empty">
+              <FiCpu className="ui-state-icon" aria-hidden="true" />
+              <p className="ui-state-title">Start a conversation</p>
+              <p>Type a question below.</p>
             </div>
           )}
-
-          <div ref={chatEndRef} />
+          {messages.map((m, i) => (
+            <div key={i} className={`bot-msg bot-msg-${m.role}`}>
+              {m.role === "error" && <FiAlertCircle aria-hidden="true" />}
+              <span>{m.content}</span>
+            </div>
+          ))}
+          {loading && (
+            <div className="bot-msg bot-msg-assistant bot-typing" aria-label="Assistant is typing">
+              <span /><span /><span />
+            </div>
+          )}
+          <div ref={endRef} />
         </div>
-
-        {/* Input Section */}
-        <div style={styles.inputRow}>
+        <form className="bot-composer" onSubmit={send}>
           <input
-            style={styles.input}
-            type="text"
+            className="ui-input"
             value={input}
-            placeholder="Type your message..."
             onChange={(e) => setInput(e.target.value)}
-            onKeyDown={(e) => e.key === "Enter" && sendMsg()}
+            placeholder={unavailable ? "Assistant unavailable" : "Type your question…"}
+            aria-label="Message"
+            maxLength={4000}
+            disabled={unavailable}
           />
-          <button style={styles.button} onClick={sendMsg}>
-            Send
+          <button type="submit" className="ui-btn ui-btn-primary" disabled={!input.trim() || loading || unavailable} aria-label="Send">
+            <FiSend aria-hidden="true" /> <span className="bot-send-label">Send</span>
           </button>
-        </div>
-      </div>
-
-      {/* Typing Animation */}
-      <style>{`
-        .dot-flashing {
-          width: 10px;
-          height: 10px;
-          border-radius: 50%;
-          background-color: #999;
-          animation: dotFlashing 1s infinite linear alternate;
-        }
-
-        @keyframes dotFlashing {
-          0% { opacity: 1; }
-          50% { opacity: .3; }
-          100% { opacity: 1; }
-        }
-      `}</style>
+        </form>
+      </section>
     </div>
   );
 }
-
-const styles = {
-  page: {
-    height: "90vh",
-    width: "100%",
-    background: "transparent",
-    display: "flex",
-    justifyContent: "center",
-    // alignItems: "center",
-    // padding: 20,
-  },
-
-  chatContainer: {
-    width: "100%",
-    maxWidth: 800,
-    background: "white",
-    borderRadius: 16,
-    padding: 20,
-    boxShadow: "0 8px 25px rgba(0,0,0,0.08)",
-    display: "flex",
-    flexDirection: "column",
-    height: "85vh",
-  },
-
-  title: {
-    textAlign: "center",
-    marginBottom: 10,
-    fontSize: 22,
-    fontWeight: "bold",
-    color: "#333",
-  },
-
-  chatBox: {
-    flex: 1,
-    overflowY: "auto",
-    padding: 10,
-    borderRadius: 10,
-    border: "1px solid #ddd",
-    background: "#fafafa",
-  },
-
-  userBubble: {
-    textAlign: "right",
-    background: "#4A90E2",
-    color: "white",
-    padding: "10px 14px",
-    margin: "8px 0",
-    borderRadius: 16,
-    maxWidth: "80%",
-    marginLeft: "auto",
-  },
-
-  botBubble: {
-    textAlign: "left",
-    background: "#e5e5e5",
-    color: "#333",
-    padding: "10px 14px",
-    margin: "8px 0",
-    borderRadius: 16,
-    maxWidth: "80%",
-  },
-
-  inputRow: {
-    display: "flex",
-    gap: 10,
-    marginTop: 12,
-  },
-
-  input: {
-    flex: 1,
-    padding: 12,
-    borderRadius: 10,
-    border: "1px solid #ccc",
-    fontSize: 15,
-  },
-
-  button: {
-    background: "#4A90E2",
-    color: "white",
-    padding: "10px 18px",
-    borderRadius: 10,
-    border: "none",
-    cursor: "pointer",
-    fontWeight: "bold",
-    fontSize: 15,
-  },
-};

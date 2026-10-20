@@ -1,228 +1,62 @@
-/* ===== Overall Page Layout ===== */
-.layout {
-  border-radius: 0; /* Handled by parent container usually, but reset here to be safe */
-  display: flex;
-  background: transparent;
-  font-family: 'Poppins', sans-serif;
-  gap: 24px;
-  animation: slideInRight 0.5s ease-out;
+/* Settings page. Shared: ../Profile/profile.css, src/styles/components.css */
+.settings-grid {
+  display: grid;
+  gap: var(--space-4);
 }
-
-@keyframes slideInRight {
-  from { opacity: 0; transform: translateX(20px); }
-  to { opacity: 1; transform: translateX(0); }
+.settings-summary {
+  margin-bottom: 0;
+  padding-bottom: 0;
+  border-bottom: 0;
 }
-
-/* ===== LEFT: Setting Items Container ===== */
-.setting_container {
-  flex: 2;
-  padding: 0;
-  border-right: none;
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-  background: transparent;
-  height: auto;
-}
-
-/* Individual items */
-.setting_item {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  padding: 18px 24px;
-  font-size: 1rem;
-  font-weight: 500;
-  color: #333;
-  border-radius: 16px;
-  cursor: pointer;
-  border: 1px solid rgba(255, 255, 255, 0.6);
-  background: white;
-  box-shadow: 0 4px 15px rgba(0,0,0,0.03);
-  transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
-}
-
-.setting_item:hover {
-  background: white;
-  transform: translateY(-4px) scale(1.01);
-  box-shadow: 0 10px 25px rgba(0,0,0,0.08);
-  border-color: #007bff;
-}
-
-.setting_item:active {
-  transform: scale(0.98);
-}
-
-/* Icon */
-.setting_icon {
-  font-size: 1.2rem;
-  color: #007bff; /* Primary color for icons */
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 40px;
-  height: 40px;
-  background: #f0f7ff;
-  border-radius: 10px;
-  transition: all 0.3s;
-}
-
-.setting_item:hover .setting_icon {
-  background: #007bff;
-  color: white;
-}
-
-/* Title */
-.setting_title {
-  flex: 1;
-}
-
-/* ===== RIGHT CARD: Profile Image + Active Pill Card ===== */
-.photo_card {
-  flex: 1;
+.settings-menu ul {
+  list-style: none;
   margin: 0;
-  padding: 40px 20px;
-  border-radius: 20px;
-  border: 1px solid rgba(255, 255, 255, 0.6);
-  background: white;
-  box-shadow: 0 10px 40px rgba(0,0,0,0.08);
+  padding: var(--space-2);
+}
+.settings-item {
   display: flex;
-  flex-direction: column;
   align-items: center;
-  justify-content: flex-start;
-  min-height: 400px;
-  transition: transform 0.3s ease;
-}
-
-.photo_card:hover {
-    transform: translateY(-5px);
-}
-
-/* Profile image */
-.photo_card img {
-  width: 150px;
-  height: 150px;
-  border-radius: 50%;
-  object-fit: cover;
-  border: 4px solid white;
-  padding: 0;
-  background: #fff;
-  margin-bottom: 24px;
-  box-shadow: 0 8px 20px rgba(0,0,0,0.15);
-  transition: transform 0.4s ease;
-}
-
-.photo_card:hover img {
-    transform: scale(1.1) rotate(5deg);
-}
-
-/* Profile name */
-.photo_card .profile-name {
-  font-size: 1.3rem;
-  font-weight: 700;
-  color: #333;
-  text-align: center;
-  margin-bottom: 16px;
-}
-
-/* ===== GitHub Active Status Pill ===== */
-.github-active-pill {
-  display: inline-flex;
-  align-items: center;
-  gap: 10px;
-  padding: 8px 20px;
-  border: 1px solid #e1e4e8;
-  border-radius: 30px;
-  background: #f6f8fa; /* Keep subtle or make vibrant */
-  color: #333;
-  margin-top: 12px;
-  min-width: 140px;
-  justify-content: center;
+  gap: var(--space-3);
+  width: 100%;
+  min-height: 48px;
+  padding: var(--space-3);
+  border: 0;
+  border-radius: var(--radius-md);
+  background: transparent;
+  color: var(--color-text);
+  font: inherit;
+  font-size: var(--text-sm);
   font-weight: 500;
-  font-size: 0.9rem;
-  box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+  text-align: left;
+  cursor: pointer;
 }
-
-/* Active green dot */
-.github-active-pill .status-dot {
-    width: 10px;
-    height: 10px;
-    background-color: #2da44e;
-    border-radius: 50%;
-    box-shadow: 0 0 0 2px #d2fedb; 
-    animation: pulse 2s infinite;
+.settings-item:hover {
+  background: var(--color-bg);
 }
-
-@keyframes pulse {
-    0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(45, 164, 78, 0.7); }
-    70% { transform: scale(1); box-shadow: 0 0 0 6px rgba(45, 164, 78, 0); }
-    100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(45, 164, 78, 0); }
+.settings-item:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
 }
-.status-dot {
-  width: 8px;
-  height: 8px;
-  background: #2da44e;
-  border-radius: 50%;
-  flex-shrink: 0;
-  animation: pillpulse 1.6s infinite alternate ease-in-out;
+.settings-icon {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-md);
+  background: var(--color-accent-soft);
+  color: var(--brand-plum);
+  font-size: 18px;
 }
-
-/* Text group */
-.github-active-pill .text-group,
-.text-group {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  line-height: 1;
+.settings-title {
+  flex: 1;
 }
-
-/* Main text */
-.github-active-pill .status-text,
-.status-text {
-  font-size: 13.5px;
-  font-weight: 600;
+.settings-chevron {
+  color: var(--color-text-muted);
 }
-
-/* Sub text */
-.github-active-pill .status-sub,
-.status-sub {
-  font-size: 10.5px;
-  color: #57606a;
-  font-weight: 400;
+.settings-item.is-danger {
+  color: var(--status-error-fg);
 }
-
-/* Pulse animation */
-@keyframes pillpulse {
-  0% {
-    opacity: 0.6;
-    transform: scale(0.97);
-  }
-  100% {
-    opacity: 1;
-    transform: scale(1.15);
-  }
-}
-
-/* ===== Responsive Fix for Mobile ===== */
-@media (max-width: 768px) {
-  .layout {
-    flex-direction: column;
-    align-items: center;
-  }
-
-  .setting_container {
-    width: 100%;
-    border-right: none;
-    border-bottom: 1px solid #e1e4e8;
-    flex-direction: row;
-    overflow-x: auto;
-    justify-content: flex-start;
-  }
-
-  .photo_card {
-    margin: 18px 0;
-    width: 92%;
-    height: auto;
-    max-width: 350px;
-  }
+.settings-item.is-danger .settings-icon {
+  background: var(--status-error-bg);
+  color: var(--status-error-fg);
 }

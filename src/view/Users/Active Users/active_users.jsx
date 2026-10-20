@@ -1,73 +1,97 @@
-import React, { useEffect, useState } from "react";
-import API_BASE_URL from '../../../utils/config';
-import './a_user.css';
-import avatar from '../../../Assets/male-avatar-boy-face-man-user-9-svgrepo-com.svg';
+import React, { useMemo, useState } from "react";
+import { FiSearch } from "react-icons/fi";
+import useResource from "../../../hooks/useResource";
+import { PageHeader, Panel, Pagination, usePagination, RoleBadge } from "../../../Components/ui";
 
+// GET /data/get_data returns recently registered users and one entry per user with a live
+// session (the server caps both lists: 1000 users, 500 sessions).
 const UsersList = () => {
-  const [users, setUsers] = useState([]);
-  const [activeUsers, setActiveUsers] = useState([]);
+  const res = useResource("/data/get_data?limit=1000&active_limit=500", true);
+  const [tab, setTab] = useState("active");
+  const [query, setQuery] = useState("");
 
-  useEffect(() => {
-    async function fetchData() {
-      try {
-        const res = await fetch(`${API_BASE_URL}/data/get_data`, {
-          method: "GET",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: "Bearer " + localStorage.getItem("token"),
-          },
-          credentials: "include",
-        });
+  const users = useMemo(() => (Array.isArray(res.data?.users) ? res.data.users : []), [res.data]);
+  const active = useMemo(() => (Array.isArray(res.data?.active_users) ? res.data.active_users : []), [res.data]);
+  const activeIds = useMemo(() => new Set(active.map((a) => a.id)), [active]);
 
-        if (!res.ok) {
-          const error = await res.json();
-          console.error("Error fetching users:", error);
-          return;
-        }
-
-        const rawData = await res.json();
-        console.log("Users fetched successfully:", rawData);
-
-        setUsers(rawData.users);          // ✅ correct way
-        setActiveUsers(rawData.active_users); // ✅ correct way
-
-      } catch (error) {
-        console.error("Fetch error:", error);
-      }
-    }
-
-    fetchData();
-  }, []);
-
-  const activeUserEmails = new Set(activeUsers.map((user) => user.email));
+  const q = query.trim().toLowerCase();
+  const match = (u) => !q || [u.fullname, u.email].some((v) => (v || "").toLowerCase().includes(q));
+  const rows = (tab === "active" ? active : users).filter(match);
+  const pager = usePagination(rows, 15, `${tab}|${q}`);
 
   return (
-    <div className="users-container">
-      <h2 id="users-title">Active Users</h2>
-      <ul className="users-list">
-        {users.length === 0 && <p className="no-data">No users found</p>} {/* safety */}
+    <div className="ui-page">
+      <PageHeader title="Active users" description="Who is signed in right now, and everyone who has registered recently." />
 
-        {users.map((user) => (
-          <li
-            key={user.id}
-            className={`user-item ${activeUserEmails.has(user.email) ? "user-active" : "user-inactive"}`}
-          >
-            <div className="user-header">
-              <div className="img-cont">
-                <img src={avatar} alt="avatar" />
-              </div>
-              <span className="user-name">{user.fullname}</span>
-              <span className="user-status">
-                {activeUserEmails.has(user.email) ? "🟢 Active" : "⚫ Inactive"}
-              </span>
-            </div>
-            <div className="user-details">
-              <p>Email: {user.email}</p>
-              <p>Created: {new Date(user.created_date).toLocaleDateString()}</p>
-            </div>
-          </li>
-        ))}
-      </ul>
+      <div className="ui-toolbar">
+        <div className="ui-tabs" role="tablist" aria-label="User lists">
+          <button type="button" role="tab" className="ui-tab" aria-selected={tab === "active"} onClick={() => setTab("active")}>
+            Signed in now<span className="ui-tab-count">{res.status === "ok" ? res.data.total_active_users ?? active.length : ""}</span>
+          </button>
+          <button type="button" role="tab" className="ui-tab" aria-selected={tab === "all"} onClick={() => setTab("all")}>
+            All users<span className="ui-tab-count">{res.status === "ok" ? res.data.total_users ?? users.length : ""}</span>
+          </button>
+        </div>
+        <div className="ui-toolbar-spacer" />
+        <div className="ui-search">
+          <FiSearch aria-hidden="true" />
+          <input className="ui-input" type="search" placeholder="Search name or email" value={query} onChange={(e) => setQuery(e.target.value)} aria-label="Search users" />
+        </div>
+      </div>
+
+      <Panel
+        flush
+        status={res.status === "idle" ? "loading" : res.status}
+        onRetry={res.reload}
+        isEmpty={rows.length === 0}
+        empty={q ? "No users match your search." : tab === "active" ? "Nobody is signed in right now." : "No users yet."}
+        footer={<Pagination {...pager} label="users" />}
+      >
+        <div className="ui-table-wrap">
+          <table className="ui-table ui-table-stack">
+            <thead>
+              {tab === "active" ? (
+                <tr>
+                  <th scope="col">Name</th>
+                  <th scope="col">Role</th>
+                  <th scope="col">Signed in at</th>
+                </tr>
+              ) : (
+                <tr>
+                  <th scope="col">Name</th>
+                  <th scope="col">Registered</th>
+                  <th scope="col">Status</th>
+                </tr>
+              )}
+            </thead>
+            <tbody>
+              {pager.pageItems.map((u) =>
+                tab === "active" ? (
+                  <tr key={u.id}>
+                    <td data-label="Name">
+                      <span className="ui-cell-main">{u.fullname}</span>
+                      <span className="ui-cell-sub">{u.email}</span>
+                    </td>
+                    <td data-label="Role"><RoleBadge role={u.role} /></td>
+                    <td data-label="Signed in at">{u.login_time || "—"}</td>
+                  </tr>
+                ) : (
+                  <tr key={u.id}>
+                    <td data-label="Name">
+                      <span className="ui-cell-main">{u.fullname}</span>
+                      <span className="ui-cell-sub">{u.email}</span>
+                    </td>
+                    <td data-label="Registered">{u.created_date || "—"}</td>
+                    <td data-label="Status">
+                      {activeIds.has(u.id) ? <span className="ui-chip ui-chip-live">Signed in</span> : <span className="ui-chip ui-chip-stale">Not signed in</span>}
+                    </td>
+                  </tr>
+                )
+              )}
+            </tbody>
+          </table>
+        </div>
+      </Panel>
     </div>
   );
 };

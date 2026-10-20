@@ -2,7 +2,9 @@
 import myimage from "../../Assets/male-avatar-boy-face-man-user-9-svgrepo-com.svg";
 import API_BASE_URL from "../../utils/config";
 
-export const fetchChatUsers = async () => {
+// Returns [] on failure by default (sidebar badge); the chat page passes throwOnError so a
+// failed load is shown as an error, not as "no contacts".
+export const fetchChatUsers = async ({ throwOnError = false } = {}) => {
   try {
     const res = await fetch(`${API_BASE_URL}/view/chat_users`, {
       method: "GET",
@@ -13,6 +15,7 @@ export const fetchChatUsers = async () => {
     });
 
     if (!res.ok) {
+        if (throwOnError) throw new Error(`Failed to fetch users (${res.status})`);
         console.warn("Failed to fetch users");
         return [];
     }
@@ -28,6 +31,7 @@ export const fetchChatUsers = async () => {
       unreadCount: user.unread_messages || 0
     }));
   } catch (error) {
+    if (throwOnError) throw error;
     console.error("Error fetching users:", error);
     return [];
   }
