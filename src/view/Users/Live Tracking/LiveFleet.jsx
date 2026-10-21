@@ -14,16 +14,29 @@ import { allowed, atLeast } from "../../../utils/access";
 import { toLocalYYYYMMDD } from "../../../utils/dates";
 import useResource from "../../../hooks/useResource";
 import {
-  STATUS_LABELS, byStart, formatAge, formatClock, isInProgress, locationAgeSeconds, trackingState, tripStatus,
+  STATUS_LABELS, byStart, formatAge, formatClock, isInProgress, lifecycleOf, locationAgeSeconds, trackingState, tripStatus,
 } from "../../../utils/trips";
 
-const FILTERS = ["all", "live", "delayed", "stale", "awaiting", "missed", "not_started", "completed", "delayed_completed"];
+// "active" = trips due or under way now (awaiting first location, live, delayed, stale).
+const FILTERS = ["active", "all", "live", "delayed", "stale", "awaiting", "upcoming", "missed", "completed", "delayed_completed"];
+const ACTIVE_STATUSES = new Set(["awaiting", "live", "delayed", "stale"]);
 const DEFAULT_CENTER = [28.6139, 77.209]; // only used before any position is known
 const POLL_FALLBACK_MS = 15000;
 
-// The trip that best describes a bus right now: in progress > next upcoming > last completed.
-const currentTrip = (trips, now) =>
-  trips.find((t) => isInProgress(t, now)) || trips.find((t) => !t.is_reached) || trips[trips.length - 1];
+// The trip that describes a bus right now (same lifecycle as the server): a trip producing
+// positions > one that has departed > one that is due > the next upcoming > the latest trip.
+// A missed (did-not-depart) or finished trip never hides a later trip of the same bus.
+const currentTrip = (trips, now, pos) => {
+  const withPos = (t) => Boolean(pos && pos.schedule_id === t.schedule_id);
+  const active = trips.filter((t) => isInProgress(t, now, withPos(t)));
+  return (
+    active.find(withPos) ||
+    active.find((t) => lifecycleOf(t, now) !== "not_started") ||
+    active[0] ||
+    trips.find((t) => lifecycleOf(t, now) === "upcoming") ||
+    trips[trips.length - 1]
+  );
+};
 
 const markerIcon = (status, selected) =>
   L.divIcon({
@@ -88,7 +101,7 @@ export default function LiveFleet() {
   const [positions, setPositions] = useState({}); // bus_id -> { latitude, longitude, timestamp, source }
   const [connection, setConnection] = useState(canPositions ? "connecting" : "off");
   const [query, setQuery] = useState("");
-  const [filter, setFilter] = useState("all");
+  const [filter, setFilter] = useState("active");
   const [routeFilter, setRouteFilter] = useState("all");
   const [selectedId, setSelectedId] = useState(null);
   const [fitVersion, setFitVersion] = useState(0);
@@ -126,10 +139,10 @@ export default function LiveFleet() {
       byBus.get(r.bus_id).push(r);
     }
     return [...byBus.entries()].map(([busId, trips]) => {
-      const trip = currentTrip(trips, now);
+      const raw = positions[busId] || null;
+      const trip = currentTrip(trips, now, raw);
       // A bus keeps its last position after a trip ends. Only a position produced by the trip
       // shown here counts; otherwise a not-started trip appeared at the previous trip's end.
-      const raw = positions[busId] || null;
       const pos = raw && raw.schedule_id === trip.schedule_id ? raw : null;
       return { busId, busNumber: trip.bus_number, trip, trips, pos, status: tripStatus(trip, pos, now) };
     });
@@ -221,14 +234,17 @@ export default function LiveFleet() {
   const counts = useMemo(() => {
     const c = Object.fromEntries(FILTERS.map((f) => [f, 0]));
     c.all = vehicles.length;
-    for (const v of vehicles) c[v.status] += 1;
+    for (const v of vehicles) {
+      if (v.status in c) c[v.status] += 1;
+      if (ACTIVE_STATUSES.has(v.status)) c.active += 1;
+    }
     return c;
   }, [vehicles]);
 
   const q = query.trim().toLowerCase();
   const visible = vehicles.filter(
     (v) =>
-      (filter === "all" || v.status === filter) &&
+      (filter === "all" || v.status === filter || (filter === "active" && ACTIVE_STATUSES.has(v.status))) &&
       (routeFilter === "all" || v.trips.some((t) => String(t.route_id) === routeFilter)) &&
       (!q || [v.busNumber, v.trip.driver_name, v.trip.route_name].some((s) => (s || "").toLowerCase().includes(q)))
   );
@@ -301,7 +317,7 @@ export default function LiveFleet() {
                 aria-pressed={filter === f}
                 onClick={() => setFilter(f)}
               >
-                {f === "all" ? "All" : STATUS_LABELS[f]} <span className="fleet-filter-count">{counts[f]}</span>
+                {f === "all" ? "All" : f === "active" ? "Active now" : STATUS_LABELS[f]} <span className="fleet-filter-count">{counts[f]}</span>
               </button>
             ))}
           </div>

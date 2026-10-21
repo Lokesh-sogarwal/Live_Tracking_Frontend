@@ -511,7 +511,7 @@ function PassengerDashboard({ can, role, firstName }) {
             >
               <ul className="trip-list">
                 {upcoming.map((r) => (
-                  <TripRow key={r.schedule_id} row={r} status="not_started" showDriver={false} canTrack={false} />
+                  <TripRow key={r.schedule_id} row={r} status="upcoming" showDriver={false} canTrack={false} />
                 ))}
               </ul>
             </Panel>

@@ -8,23 +8,36 @@ import useResource from "../../../hooks/useResource";
 import { usePermissions } from "../../../context/PermissionsContext";
 import { allowed } from "../../../utils/access";
 import { toLocalYYYYMMDD } from "../../../utils/dates";
-import { byStart, formatClock, hasStarted, isCancelled, isDelayed, trackingState } from "../../../utils/trips";
+import { byStart, formatClock, isDelayed, trackingState, lifecycleOf } from "../../../utils/trips";
 import { PageHeader, Panel, Field, Dialog, Pagination, usePagination } from "../../../Components/ui";
 
 // Schedule status for a timetable view (no live position needed).
+// Labels for the shared trip lifecycle (utils/trips.js lifecycleOf = server tripLifecycle).
 const STATUS = {
   running: { label: "Running", chip: "live" },
   upcoming: { label: "Upcoming", chip: "not_started" },
+  awaiting: { label: "Awaiting first location", chip: "awaiting" },
+  missed: { label: "Did not depart", chip: "missed" },
   delayed: { label: "Delayed", chip: "delayed" },
   completed: { label: "Completed", chip: "completed" },
   delayed_completed: { label: "Completed late", chip: "delayed_completed" },
   cancelled: { label: "Cancelled", chip: "error" },
 };
+const LIFECYCLE_TO_STATUS = {
+  upcoming: "upcoming",
+  not_started: "awaiting", // due, not departed yet
+  running: "running",
+  delayed: "delayed",
+  did_not_depart: "missed",
+  completed: "completed",
+  delayed_completed: "delayed_completed",
+  cancelled: "cancelled",
+  invalid: "cancelled",
+};
 const scheduleStatus = (r, now) => {
-  if (r.is_reached) return /delayed_completed/i.test(r.status || "") ? "delayed_completed" : "completed";
-  if (isCancelled(r)) return "cancelled";
-  if (isDelayed(r)) return "delayed";
-  return hasStarted(r, now) ? "running" : "upcoming";
+  const s = LIFECYCLE_TO_STATUS[lifecycleOf(r, now)];
+  // An operator-set "delayed" shows as Delayed until the trip finishes.
+  return (s === "awaiting" || s === "running") && isDelayed(r) ? "delayed" : s;
 };
 
 const shiftDate = (yyyyMmDd, days) => {

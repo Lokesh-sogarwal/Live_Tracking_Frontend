@@ -45,8 +45,10 @@ export function normalizeTrip(route, schedule) {
     reverse,
     origin: reverse ? b : a,
     destination: reverse ? a : b,
-    startAt: parseWhen(date, schedule.arrival_time) || parseWhen(date, schedule.end_time),
-    endAt: parseWhen(date, schedule.departure_time) || parseWhen(date, schedule.start_time),
+    // Exact instants from the server when present (no browser-timezone guessing).
+    startAt: (schedule.start_at && new Date(schedule.start_at)) || parseWhen(date, schedule.arrival_time) || parseWhen(date, schedule.end_time),
+    endAt: (schedule.end_at && new Date(schedule.end_at)) || parseWhen(date, schedule.departure_time) || parseWhen(date, schedule.start_time),
+    started: schedule.started === true,
     status: String(schedule.status || "").toLowerCase(),
     isReached: Boolean(schedule.is_reached),
   };
@@ -68,7 +70,7 @@ export function trackingStatus(trip, location, now = new Date(), server = null) 
   const started = trip.startAt ? trip.startAt <= now : Boolean(location);
   if (!started && !location) return "not_started";
   // The simulation never starts a trip after its window; one that hasn't departed by then won't.
-  if (!location && !server?.started && trip.endAt && trip.endAt <= now) return "missed";
+  if (!location && !server?.started && !trip.started && trip.endAt && trip.endAt <= now) return "missed";
   if (!location) return /delay/.test(status) ? "delayed_waiting" : "unavailable";
   if (/delay/.test(trip.status)) return "delayed";
   return isStale(location, now) ? "stale" : "live";
@@ -85,9 +87,9 @@ export const STATUS_TEXT = {
   live: "Live",
   delayed: "Delayed",
   delayed_waiting: "Delayed",
-  stale: "Signal lost",
-  not_started: "Not started",
-  unavailable: "Waiting for location",
+  stale: "Stale",
+  not_started: "Upcoming",
+  unavailable: "Awaiting first location",
   completed: "Completed",
   completed_late: "Completed late",
   cancelled: "Cancelled",

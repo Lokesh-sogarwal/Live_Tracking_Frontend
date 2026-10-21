@@ -1,4 +1,4 @@
-import { STATUS_LABELS, tripLocation, tripStatus } from "./trips";
+import { STATUS_LABELS, isInProgress, lifecycleOf, summarizeTrips, tripLocation, tripStatus } from "./trips";
 
 const date = "2026-10-21";
 const at = (hhmm, s = "00") => new Date(`${date}T${hhmm}:${s}`);
@@ -6,10 +6,10 @@ const row = (over = {}) => ({ schedule_id: 9, bus_id: 1, date, arrival_time: "10
 const loc = (ts) => ({ schedule_id: 9, timestamp: ts.toISOString() });
 
 describe("tripStatus", () => {
-  it("a future trip without a position is Not started", () => expect(tripStatus(row(), null, at("09:59"))).toBe("not_started"));
+  it("a future trip without a position is Upcoming", () => expect(tripStatus(row(), null, at("09:59"))).toBe("upcoming"));
   it("a started trip with no position yet is Awaiting location (not Not started, not Stale)", () => {
     expect(tripStatus(row(), null, at("10:05"))).toBe("awaiting");
-    expect(STATUS_LABELS.awaiting).toBe("Awaiting location");
+    expect(STATUS_LABELS.awaiting).toBe("Awaiting first location");
   });
   it("Live while positions are fresh; Stale once they stop for more than 2 minutes", () => {
     expect(tripStatus(row(), loc(at("10:05")), at("10:06"))).toBe("live");
@@ -35,6 +35,41 @@ describe("tripStatus", () => {
   it("a trip whose window passed and that never departed is 'Did not depart'", () => {
     expect(tripStatus(row({ started: false }), null, at("11:00"))).toBe("missed");
     expect(tripStatus(row({ started: false }), null, at("10:10"))).toBe("awaiting");
-    expect(tripStatus(row(), null, at("11:00"))).toBe("awaiting"); // older payload without "started": no guess
+    expect(tripStatus(row(), null, at("11:00"))).toBe("missed"); // no position and nothing says it departed
+  });
+});
+
+describe("lifecycleOf mirrors the server (services/tripLifecycle.js)", () => {
+  // Exact instants as the API sends them: 16:54-16:59 IST = 11:24-11:29 UTC.
+  const r = (over = {}) => ({ schedule_id: 1, bus_id: 1, start_at: "2026-10-21T11:24:00Z", end_at: "2026-10-21T11:29:00Z", started: false, is_reached: false, status: "on_time", ...over });
+  const t = (iso) => new Date(iso);
+  it("upcoming -> not_started (due) -> did_not_depart, by the server's instants, not the browser timezone", () => {
+    expect(lifecycleOf(r(), t("2026-10-21T11:23:59Z"))).toBe("upcoming");
+    expect(lifecycleOf(r(), t("2026-10-21T11:24:00Z"))).toBe("not_started");
+    expect(lifecycleOf(r(), t("2026-10-21T11:29:00Z"))).toBe("did_not_depart");
+  });
+  it("departed: running, then delayed after its end; never completed by time", () => {
+    expect(lifecycleOf(r({ started: true }), t("2026-10-21T11:26:00Z"))).toBe("running");
+    expect(lifecycleOf(r({ started: true }), t("2026-10-21T13:00:00Z"))).toBe("delayed");
+  });
+  it("a position from this trip counts as departed (between schedule refreshes)", () => {
+    expect(lifecycleOf(r(), t("2026-10-21T11:26:00Z"), true)).toBe("running");
+  });
+  it("in progress = due or under way; a missed or future trip is not", () => {
+    expect(isInProgress(r(), t("2026-10-21T11:25:00Z"))).toBe(true);
+    expect(isInProgress(r(), t("2026-10-21T12:00:00Z"))).toBe(false);
+    expect(isInProgress(r(), t("2026-10-21T11:00:00Z"))).toBe(false);
+  });
+  it("labels: active trip without position = Awaiting first location; never Stale before departing", () => {
+    expect(tripStatus(r(), null, t("2026-10-21T11:25:00Z"))).toBe("awaiting");
+    expect(tripStatus(r({ started: true }), { schedule_id: 1, timestamp: "2026-10-21T11:24:30Z" }, t("2026-10-21T11:28:00Z"))).toBe("stale");
+  });
+  it("dashboard counters follow the lifecycle (the missed 07:30 trip is not 'running')", () => {
+    const rows = [
+      r({ schedule_id: 2, start_at: "2026-10-21T02:00:00Z", end_at: "2026-10-21T02:05:00Z" }), // 07:30-07:35, never departed
+      r({ schedule_id: 1, started: true }),
+      r({ schedule_id: 3, start_at: "2026-10-21T13:00:00Z", end_at: "2026-10-21T13:30:00Z" }),
+    ];
+    expect(summarizeTrips(rows, t("2026-10-21T11:25:00Z"))).toMatchObject({ running: 1, missed: 1, upcoming: 1, completed: 0 });
   });
 });

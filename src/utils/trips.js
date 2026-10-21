@@ -1,25 +1,29 @@
-// Trip timing and status for rows from GET /bus/schedules.
+// Trip timing and status for rows from GET /bus/schedules (and route search).
 //
-// Legacy field naming (kept by the API): `arrival_time` is when the trip STARTS (shown as
-// "Departure" on All Routes) and `departure_time` is when it ENDS. Times are "HH:MM" on the
-// row's `date`, in the app timezone, which is assumed to be the browser's timezone (the
-// tracking page makes the same assumption).
+// The server sends exact instants (`start_at`, `end_at`), whether the bus has departed
+// (`started`) and the trip's `lifecycle` (backend-node/src/services/tripLifecycle.js).
+// lifecycleOf() below applies the SAME rules, so every screen agrees and stays current between
+// refreshes. Older payloads without start_at fall back to `date` + "HH:MM" (legacy naming:
+// `arrival_time` is the START, `departure_time` the END) in the browser's timezone.
 
 // Mirrors the server's LOCATION_STALE_SECONDS default.
 export const STALE_AFTER_SECONDS = 120;
 
 export const STATUS_LABELS = {
+  upcoming: "Upcoming",
+  // Due (or departed) but no position has been received for this trip yet.
+  awaiting: "Awaiting first location",
   live: "Live",
   delayed: "Delayed",
   stale: "Stale",
-  not_started: "Not started",
-  // Started by the timetable, but no position has been received for this trip.
-  awaiting: "Awaiting location",
-  // Its scheduled window passed and the bus never departed (the simulation won't start it late).
+  // Its scheduled window passed and the bus never departed (it is not started late).
   missed: "Did not depart",
   completed: "Completed",
   // Reached the destination after its scheduled arrival (server status "delayed_completed").
   delayed_completed: "Completed late",
+  cancelled: "Cancelled",
+  invalid: "Invalid schedule",
+  not_started: "Not started", // kept for older callers
 };
 
 const toDate = (date, hhmm) => {
@@ -28,16 +32,35 @@ const toDate = (date, hhmm) => {
   return Number.isNaN(d.getTime()) ? null : d;
 };
 
-export const tripStart = (row) => toDate(row.date, row.arrival_time);
-export const tripEnd = (row) => toDate(row.date, row.departure_time);
+export const tripStart = (row) => (row.start_at ? new Date(row.start_at) : toDate(row.date, row.arrival_time));
+export const tripEnd = (row) => (row.end_at ? new Date(row.end_at) : toDate(row.date, row.departure_time));
 
-export const isDelayed = (row) => /delay/i.test(row.status || "");
+export const isDelayed = (row) => /delay/i.test(row.status || "") && !/delayed_completed/i.test(row.status || "");
 export const isCancelled = (row) => /cancel/i.test(row.status || "");
 export const hasStarted = (row, now = new Date()) => {
   const start = tripStart(row);
   return Boolean(start && start <= now);
 };
-export const isInProgress = (row, now = new Date()) => !row.is_reached && hasStarted(row, now);
+
+// Same rules as the server's tripLifecycle(). A position produced by this trip counts as departed.
+//   upcoming | not_started (due, not departed) | running | delayed | did_not_depart |
+//   completed | delayed_completed | cancelled | invalid
+export function lifecycleOf(row, now = new Date(), hasPosition = false) {
+  const status = String(row.status || "").toLowerCase();
+  if (/cancel/.test(status)) return "cancelled";
+  if (row.is_reached) return status === "delayed_completed" ? "delayed_completed" : "completed";
+  const start = tripStart(row);
+  const end = tripEnd(row);
+  if (!start || !end) return row.lifecycle || "upcoming";
+  if (!(start < end)) return "invalid";
+  if (row.started === true || hasPosition) return status === "delayed" || now > end ? "delayed" : "running";
+  if (now < start) return "upcoming";
+  if (now < end) return "not_started";
+  return "did_not_depart";
+}
+export const ACTIVE_LIFECYCLES = new Set(["not_started", "running", "delayed"]);
+// "In progress": due or under way right now (never a missed, finished or future trip).
+export const isInProgress = (row, now = new Date(), hasPosition = false) => ACTIVE_LIFECYCLES.has(lifecycleOf(row, now, hasPosition));
 
 // The position of a bus counts for a trip only if that trip produced it (schedule_id on every
 // location payload). A bus keeps its last position after a trip; without this check the next
@@ -51,28 +74,29 @@ export const tripLocation = (locations, row) => {
 export const locationAgeSeconds = (location, now = new Date()) =>
   location?.timestamp ? Math.max(0, Math.round((now - new Date(location.timestamp)) / 1000)) : null;
 
-// One status per trip: completed > not started (future) > delayed > live / stale / awaiting.
-// "awaiting" (started by the timetable, no position for this trip) is kept apart from
-// "not started" (start time still ahead) and "stale" (positions arrived, then stopped).
+// The label a screen shows: the lifecycle, refined by this trip's position for active trips.
+//   active + no position -> awaiting ("Awaiting first location"); old position -> stale;
+//   fresh position -> live (or delayed). Never stale for a trip that hasn't departed.
+const LIFECYCLE_STATUS = { upcoming: "upcoming", did_not_depart: "missed", completed: "completed", delayed_completed: "delayed_completed", cancelled: "cancelled", invalid: "invalid" };
 export function tripStatus(row, location, now = new Date()) {
-  if (row.is_reached) return /delayed_completed/i.test(row.status || "") ? "delayed_completed" : "completed";
-  if (!hasStarted(row, now)) return "not_started";
-  if (isDelayed(row)) return "delayed";
+  const lc = lifecycleOf(row, now, Boolean(location));
+  if (LIFECYCLE_STATUS[lc]) return LIFECYCLE_STATUS[lc];
   const age = locationAgeSeconds(location, now);
-  // `started` (from GET /bus/schedules) says whether the bus actually departed.
-  if (age === null && row.started === false && tripEnd(row) && tripEnd(row) <= now) return "missed";
-  if (age === null) return "awaiting";
-  return age > STALE_AFTER_SECONDS ? "stale" : "live";
+  if (age === null) return isDelayed(row) ? "delayed" : "awaiting";
+  if (age > STALE_AFTER_SECONDS) return "stale";
+  return lc === "delayed" ? "delayed" : "live";
 }
 
 export function summarizeTrips(rows, now = new Date()) {
-  const s = { total: rows.length, running: 0, completed: 0, delayed: 0, upcoming: 0, cancelled: 0 };
+  const s = { total: rows.length, running: 0, completed: 0, delayed: 0, upcoming: 0, cancelled: 0, missed: 0 };
   for (const r of rows) {
-    if (r.is_reached) s.completed += 1;
-    else if (isCancelled(r)) s.cancelled += 1;
-    else if (hasStarted(r, now)) s.running += 1;
-    else s.upcoming += 1;
-    if (!r.is_reached && isDelayed(r)) s.delayed += 1;
+    const lc = lifecycleOf(r, now);
+    if (lc === "completed" || lc === "delayed_completed") s.completed += 1;
+    else if (lc === "cancelled" || lc === "invalid") s.cancelled += 1;
+    else if (lc === "did_not_depart") s.missed += 1;
+    else if (lc === "upcoming") s.upcoming += 1;
+    else s.running += 1; // not_started, running, delayed: active now
+    if (lc === "delayed" || (ACTIVE_LIFECYCLES.has(lc) && isDelayed(r))) s.delayed += 1;
   }
   return s;
 }

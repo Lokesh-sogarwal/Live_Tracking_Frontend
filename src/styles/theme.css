@@ -210,6 +210,8 @@ body {
 .ui-chip-delayed { color: var(--status-delayed-fg); background: var(--status-delayed-bg); }
 .ui-chip-stale { color: var(--status-stale-fg); background: var(--status-stale-bg); }
 .ui-chip-not_started { color: var(--status-notstarted-fg); background: var(--status-notstarted-bg); }
+.ui-chip-upcoming { color: var(--status-notstarted-fg); background: var(--status-notstarted-bg); }
+.ui-chip-cancelled, .ui-chip-invalid { color: var(--status-error-fg); background: var(--status-error-bg); }
 .ui-chip-awaiting { color: var(--status-stale-fg); background: var(--status-stale-bg); }
 .ui-chip-missed { color: var(--status-error-fg); background: var(--status-stale-bg); }
 .ui-chip-completed { color: var(--status-completed-fg); background: var(--status-completed-bg); }
