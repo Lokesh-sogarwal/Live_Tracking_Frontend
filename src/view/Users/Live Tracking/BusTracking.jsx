@@ -15,8 +15,9 @@ import { formatAge } from "../../../utils/trips";
 
 // Tracks ONE trip. Positions are requested for this trip only (GET /view/get_location/:bus?
 // schedule_id=…), so a bus parked at the end of its previous trip is never drawn on this one.
-const POLL_MS = 3000;
-const POLLING = new Set(["live", "delayed", "delayed_waiting", "stale", "unavailable", "not_started"]);
+// Poll fast only while the bus is moving; a trip that hasn't started (or has no position yet)
+// is checked less often (each check is a 404 "no location for this trip yet").
+const POLL_MS = { live: 3000, delayed: 3000, stale: 3000, unavailable: 5000, delayed_waiting: 5000, not_started: 15000 };
 
 const pinIcon = (kind, label) =>
   L.divIcon({
@@ -175,8 +176,8 @@ export default function BusTracking() {
     fetchLocation();
   }, [fetchLocation]);
   useEffect(() => {
-    if (!POLLING.has(status)) return undefined;
-    const t = setInterval(fetchLocation, POLL_MS);
+    if (!POLL_MS[status]) return undefined;
+    const t = setInterval(fetchLocation, POLL_MS[status]);
     return () => clearInterval(t);
   }, [status, fetchLocation]);
   useEffect(() => {
@@ -209,8 +210,9 @@ export default function BusTracking() {
   }
 
   const age = ageSeconds(loc, now);
-  const showBus = Boolean(position) && ["live", "delayed", "stale", "completed"].includes(status);
-  const waiting = ["not_started", "unavailable", "delayed_waiting", "cancelled"].includes(status) || (status === "completed" && !position);
+  const done = status === "completed" || status === "completed_late";
+  const showBus = Boolean(position) && ["live", "delayed", "stale"].concat(done ? [status] : []).includes(status);
+  const waiting = ["not_started", "unavailable", "delayed_waiting", "cancelled"].includes(status) || (done && !position);
   const bounds = route.coords.length > 1 ? route.coords : [trip.origin, trip.destination].filter((p) => p.valid).map((p) => [p.lat, p.lng]);
   const center = bounds[0] || [28.6, 77.2];
   const busLabel = trip.busNumber ? `Bus ${trip.busNumber}` : "Bus";
@@ -220,8 +222,8 @@ export default function BusTracking() {
     (loc ? `<span>Updated ${esc(clock(new Date(loc.timestamp)))}${age !== null ? ` (${esc(formatAge(age))})` : ""}</span>` : "") +
     (progress ? `<span>${esc(km(progress.covered))} of ${esc(km(progress.total))}</span>` : "") +
     `</div>`;
-  const doneCoords = progress && status !== "completed" ? progress.done : status === "completed" && position ? route.coords : null;
-  const remainingCoords = progress && status !== "completed" ? progress.remaining : null;
+  const doneCoords = progress && !done ? progress.done : done && position ? route.coords : null;
+  const remainingCoords = progress && !done ? progress.remaining : null;
 
   const Details = (
     <dl className="bt-dl">
@@ -291,8 +293,8 @@ export default function BusTracking() {
         <li><span>Last update</span><strong>{loc ? formatAge(age) : "—"}</strong></li>
         <li>
           <span>Progress</span>
-          <strong>{status === "completed" ? "Arrived" : progress ? `${Math.round(progress.fraction * 100)}% · ${km(progress.covered)} of ${km(progress.total)}` : "—"}</strong>
-          {progress && status !== "completed" && (
+          <strong>{done ? (status === "completed_late" ? "Arrived late" : "Arrived") : progress ? `${Math.round(progress.fraction * 100)}% · ${km(progress.covered)} of ${km(progress.total)}` : "—"}</strong>
+          {progress && !done && (
             <span className="bt-progress" aria-hidden="true"><span style={{ width: `${progress.fraction * 100}%` }} /></span>
           )}
         </li>
@@ -323,8 +325,8 @@ export default function BusTracking() {
               <BusMarker
                 key={trip.scheduleId}
                 position={position}
-                status={status === "delayed" ? "delayed" : status}
-                heading={status === "completed" ? null : heading}
+                status={done ? "completed" : status}
+                heading={done ? null : heading}
                 title={markerTitle}
                 popupHtml={popupHtml}
                 onSelect={() => setDetailsOpen(true)}
@@ -341,7 +343,7 @@ export default function BusTracking() {
           {fetchState.checked && waiting && (
             <WaitingCard
               trip={trip}
-              variant={status === "completed" ? "completed" : status}
+              variant={done ? "completed" : status}
               onRetry={status === "unavailable" || status === "delayed_waiting" ? fetchLocation : null}
               retrying={fetchState.busy}
             />

@@ -59,6 +59,7 @@
 .ex-chip-running { background: var(--status-live-bg); color: var(--status-live-fg); }
 .ex-chip-delayed { background: var(--status-delayed-bg); color: var(--status-delayed-fg); }
 .ex-chip-completed { background: var(--status-completed-bg); color: var(--status-completed-fg); }
+.ex-chip-completed_late { background: var(--status-completed-bg); color: var(--status-delayed-fg); }
 .ex-chip-cancelled { background: var(--status-error-bg); color: var(--status-error-fg); }
 .ex-routes li { padding: 14px; border: 1px solid var(--color-border); border-radius: 12px; }
 

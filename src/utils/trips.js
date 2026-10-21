@@ -13,7 +13,11 @@ export const STATUS_LABELS = {
   delayed: "Delayed",
   stale: "Stale",
   not_started: "Not started",
+  // Started by the timetable, but no position has been received for this trip.
+  awaiting: "Awaiting location",
   completed: "Completed",
+  // Reached the destination after its scheduled arrival (server status "delayed_completed").
+  delayed_completed: "Completed late",
 };
 
 const toDate = (date, hhmm) => {
@@ -45,13 +49,15 @@ export const tripLocation = (locations, row) => {
 export const locationAgeSeconds = (location, now = new Date()) =>
   location?.timestamp ? Math.max(0, Math.round((now - new Date(location.timestamp)) / 1000)) : null;
 
-// One status per trip: completed > not started (future) > delayed > live / stale / not started.
+// One status per trip: completed > not started (future) > delayed > live / stale / awaiting.
+// "awaiting" (started by the timetable, no position for this trip) is kept apart from
+// "not started" (start time still ahead) and "stale" (positions arrived, then stopped).
 export function tripStatus(row, location, now = new Date()) {
-  if (row.is_reached) return "completed";
+  if (row.is_reached) return /delayed_completed/i.test(row.status || "") ? "delayed_completed" : "completed";
   if (!hasStarted(row, now)) return "not_started";
   if (isDelayed(row)) return "delayed";
   const age = locationAgeSeconds(location, now);
-  if (age === null) return "not_started";
+  if (age === null) return "awaiting";
   return age > STALE_AFTER_SECONDS ? "stale" : "live";
 }
 

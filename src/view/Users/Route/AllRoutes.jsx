@@ -227,9 +227,14 @@ const AllRoutes = () => {
         return new Date(dateString).toLocaleDateString(undefined, options);
     };
 
+    // Readable labels for the server's status values.
+    const STATUS_TEXT = { on_time: 'On time', running: 'Running', delayed: 'Delayed', cancelled: 'Cancelled', arrived: 'Completed', delayed_completed: 'Completed late' };
+
     // Maps the display label to a status chip (text label always shown with the colour).
     const chipFor = (status) => {
         const st = String(status || '').replace(/_/g, ' ').toLowerCase();
+        if (st === 'delayed completed') return 'delayed_completed';
+        if (st === 'arrived' || st === 'completed') return 'completed';
         if (st === 'delayed') return 'delayed';
         if (st === 'cancelled') return 'error';
         if (st === 'completed') return 'completed';
@@ -293,7 +298,7 @@ const AllRoutes = () => {
                                             <span>Arrives</span>
                                         </span>
                                     </span>
-                                    <span className={`ui-chip ui-chip-${chipFor(schedule.status)}`}>{schedule.status}</span>
+                                    <span className={`ui-chip ui-chip-${chipFor(schedule.status)}`}>{STATUS_TEXT[String(schedule.status || '').toLowerCase()] || schedule.status}</span>
                                 </button>
                             </li>
                         ))}

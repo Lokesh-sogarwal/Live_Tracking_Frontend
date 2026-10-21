@@ -237,6 +237,7 @@
 .fleet-marker-stale { border-color: var(--status-stale-fg); opacity: 0.8; }
 .fleet-marker-not_started { border-color: var(--status-notstarted-fg); }
 .fleet-marker-completed { border-color: var(--brand-plum); }
+.fleet-marker-delayed_completed { border-color: var(--status-delayed-fg); }
 .fleet-marker.is-selected {
   outline: 3px solid var(--brand-rose);
   outline-offset: 2px;
@@ -335,3 +336,17 @@
     right: var(--space-3);
   }
 }
+
+/* Why positions may not be moving (worker stopped, simulation off, last error). */
+.fleet-service-note {
+  margin: var(--space-2) 0 0;
+  padding: 8px 10px;
+  border-radius: var(--radius-md);
+  background: var(--status-notstarted-bg);
+  color: var(--status-notstarted-fg);
+  font-size: var(--text-xs);
+  line-height: 1.45;
+}
+.fleet-service-note.is-warning { background: var(--status-delayed-bg); color: var(--status-delayed-fg); }
+.fleet-service-note.is-error { background: var(--status-error-bg); color: var(--status-error-fg); }
+.fleet-service-note code { font-size: 0.95em; background: rgba(255, 255, 255, 0.6); padding: 0 4px; border-radius: 4px; }

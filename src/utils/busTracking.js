@@ -57,7 +57,9 @@ export function normalizeTrip(route, schedule) {
 export function trackingStatus(trip, location, now = new Date()) {
   if (!trip) return "unavailable";
   if (/cancel/.test(trip.status)) return "cancelled";
-  if (trip.isReached || location?.trip_completed) return "completed";
+  if (trip.isReached || location?.trip_completed) {
+    return /delayed_completed/.test(location?.trip_status || trip.status) ? "completed_late" : "completed";
+  }
   const started = trip.startAt ? trip.startAt <= now : Boolean(location);
   if (!started && !location) return "not_started";
   if (!location) return /delay/.test(trip.status) ? "delayed_waiting" : "unavailable";
@@ -80,6 +82,7 @@ export const STATUS_TEXT = {
   not_started: "Not started",
   unavailable: "Waiting for location",
   completed: "Completed",
+  completed_late: "Completed late",
   cancelled: "Cancelled",
 };
 export const STATUS_CHIP = {
@@ -90,6 +93,7 @@ export const STATUS_CHIP = {
   not_started: "not_started",
   unavailable: "stale",
   completed: "completed",
+  completed_late: "delayed_completed",
   cancelled: "error",
 };
 

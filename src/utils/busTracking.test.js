@@ -45,6 +45,10 @@ describe("trackingStatus (all states)", () => {
     expect(trackingStatus(normalizeTrip(ROUTE, row({ is_reached: true })), null, at("12:00"))).toBe("completed");
     expect(trackingStatus(trip, loc({ trip_completed: true }), at("11:01"))).toBe("completed");
   });
+  it("completed late, from the schedule or from this trip's position", () => {
+    expect(trackingStatus(normalizeTrip(ROUTE, row({ is_reached: true, status: "delayed_completed" })), null, at("12:00"))).toBe("completed_late");
+    expect(trackingStatus(trip, loc({ trip_completed: true, trip_status: "delayed_completed" }), at("11:30"))).toBe("completed_late");
+  });
   it("cancelled", () => expect(trackingStatus(normalizeTrip(ROUTE, row({ status: "Cancelled" })), null, at("10:30"))).toBe("cancelled"));
 });
 

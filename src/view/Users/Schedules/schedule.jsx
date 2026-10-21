@@ -17,10 +17,11 @@ const STATUS = {
   upcoming: { label: "Upcoming", chip: "not_started" },
   delayed: { label: "Delayed", chip: "delayed" },
   completed: { label: "Completed", chip: "completed" },
+  delayed_completed: { label: "Completed late", chip: "delayed_completed" },
   cancelled: { label: "Cancelled", chip: "error" },
 };
 const scheduleStatus = (r, now) => {
-  if (r.is_reached) return "completed";
+  if (r.is_reached) return /delayed_completed/i.test(r.status || "") ? "delayed_completed" : "completed";
   if (isCancelled(r)) return "cancelled";
   if (isDelayed(r)) return "delayed";
   return hasStarted(r, now) ? "running" : "upcoming";

@@ -12,7 +12,7 @@ const NAV = [
   { to: "/", label: "Home" },
   { to: "/explore", label: "Routes & times", current: true },
 ];
-const STATUS = { scheduled: "Scheduled", running: "On the way", delayed: "Delayed", completed: "Completed", cancelled: "Cancelled" };
+const STATUS = { scheduled: "Scheduled", running: "On the way", delayed: "Delayed", completed: "Completed", completed_late: "Arrived late", cancelled: "Cancelled" };
 
 const todayIso = () => new Date().toLocaleDateString("en-CA");
 const addDays = (iso, n) => {

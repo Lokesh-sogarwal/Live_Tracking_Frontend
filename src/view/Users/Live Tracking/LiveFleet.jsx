@@ -10,14 +10,14 @@ import busImg from "../../../Assets/bus.png";
 import API_BASE_URL from "../../../utils/config";
 import { apiGet } from "../../../utils/api";
 import { usePermissions } from "../../../context/PermissionsContext";
-import { allowed } from "../../../utils/access";
+import { allowed, atLeast } from "../../../utils/access";
 import { toLocalYYYYMMDD } from "../../../utils/dates";
 import useResource from "../../../hooks/useResource";
 import {
   STATUS_LABELS, byStart, formatAge, formatClock, isInProgress, locationAgeSeconds, trackingState, tripStatus,
 } from "../../../utils/trips";
 
-const FILTERS = ["all", "live", "delayed", "stale", "not_started", "completed"];
+const FILTERS = ["all", "live", "delayed", "stale", "awaiting", "not_started", "completed", "delayed_completed"];
 const DEFAULT_CENTER = [28.6139, 77.209]; // only used before any position is known
 const POLL_FALLBACK_MS = 15000;
 
@@ -97,6 +97,12 @@ export default function LiveFleet() {
   const socketRef = useRef(null);
   const subscribed = useRef(new Set());
   const busIdsRef = useRef([]);
+  // Whether anything is producing positions (the worker), as opposed to the socket being up.
+  const tracking = useResource("/view/tracking_status", canPositions);
+  const { reload: reloadTracking } = tracking;
+  // Read through a ref so the socket effect doesn't depend on (and re-create the socket for) it.
+  const reloadTrackingRef = useRef(reloadTracking);
+  reloadTrackingRef.current = reloadTracking;
   const hasFitted = useRef(false);
   const mapSectionRef = useRef(null);
 
@@ -131,6 +137,15 @@ export default function LiveFleet() {
 
   const busIdsKey = vehicles.map((v) => v.busId).join(",");
 
+  useEffect(() => {
+    if (!canPositions) return undefined;
+    const t = setInterval(reloadTracking, 15000);
+    return () => clearInterval(t);
+  }, [canPositions, reloadTracking]);
+  const service = tracking.status === "ok" ? tracking.data : null;
+  const workerDown = Boolean(service && !service.worker.running);
+  const simulationOff = Boolean(service && service.worker.running && service.simulation.enabled === false);
+
   // Live positions: Socket.IO "bus:subscribe" gives the current position, then "bus:location"
   // for every update (including simulated ones relayed by the API).
   useEffect(() => {
@@ -139,6 +154,7 @@ export default function LiveFleet() {
     socketRef.current = socket;
     socket.on("connect", () => {
       setConnection("live");
+      reloadTrackingRef.current();
       // A recovered session keeps its rooms; otherwise subscribe again.
       if (!socket.recovered) subscribed.current = new Set();
       for (const id of busIdsRef.current) {
@@ -304,9 +320,37 @@ export default function LiveFleet() {
               {visible.length} of {vehicles.length} buses
             </span>
             <span className={`fleet-conn fleet-conn-${connection}`}>
-              {connection === "live" ? "Live updates" : connection === "connecting" ? "Connecting…" : connection === "off" ? "Positions unavailable" : "Reconnecting · polling"}
+              {connection === "live"
+                ? workerDown
+                  ? "Connected · no updates"
+                  : "Live updates"
+                : connection === "connecting"
+                  ? "Connecting…"
+                  : connection === "off"
+                    ? "Positions unavailable"
+                    : "Reconnecting · polling"}
             </span>
           </div>
+          {workerDown && (
+            <p className="fleet-service-note is-warning" role="status">
+              Bus positions are not being updated: the tracking worker isn't running
+              {service.worker.last_heartbeat_at ? ` (last seen ${formatAge(Math.round((now - new Date(service.worker.last_heartbeat_at)) / 1000))})` : ""}.
+              {atLeast(role, "operator") && <> Start it with <code>npm run start:worker</code> in <code>backend-node</code>.</>}
+            </p>
+          )}
+          {simulationOff && !vehicles.some((v) => v.status === "live") && (
+            <p className="fleet-service-note" role="status">
+              Simulation is off, so positions come only from drivers' devices.
+              {atLeast(role, "operator") && <> Set <code>SIMULATION_ENABLED=true</code> and restart the worker to simulate buses.</>}
+            </p>
+          )}
+          {service?.last_error && !workerDown && atLeast(role, "operator") && (
+            <p className="fleet-service-note is-error" role="status">
+              Last tracking error ({service.last_error.job}
+              {service.last_error.bus_id ? `, bus ${service.last_error.bus_id}` : ""}
+              {service.last_error.schedule_id ? `, trip #${service.last_error.schedule_id}` : ""}): {service.last_error.message}
+            </p>
+          )}
         </div>
 
         <div className="fleet-list-body">

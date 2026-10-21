@@ -437,7 +437,7 @@ function DriverDashboard({ can, role, userId, firstName }) {
             <Panel title="My schedule today" subtitle={`${mine.length} trips`}>
               <ul className="trip-list">
                 {mine.map((r) => (
-                  <TripRow key={r.schedule_id} row={r} status={tripStatus(r, r.bus_id === current?.bus_id ? loc : null, now)} showDriver={false} canTrack={canTrack} />
+                  <TripRow key={r.schedule_id} row={r} status={tripStatus(r, tripLocation(locations, r), now)} showDriver={false} canTrack={canTrack} />
                 ))}
               </ul>
             </Panel>
