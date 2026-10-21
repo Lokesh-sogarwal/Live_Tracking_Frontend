@@ -32,4 +32,9 @@ describe("tripStatus", () => {
     expect(STATUS_LABELS.delayed_completed).toBe("Completed late");
     expect(tripStatus(row({ is_reached: true, status: "arrived" }), null, at("18:00"))).toBe("completed");
   });
+  it("a trip whose window passed and that never departed is 'Did not depart'", () => {
+    expect(tripStatus(row({ started: false }), null, at("11:00"))).toBe("missed");
+    expect(tripStatus(row({ started: false }), null, at("10:10"))).toBe("awaiting");
+    expect(tripStatus(row(), null, at("11:00"))).toBe("awaiting"); // older payload without "started": no guess
+  });
 });

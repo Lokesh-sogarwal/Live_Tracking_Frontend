@@ -1,4 +1,4 @@
-import { headingBetween, normalizeTrip, parseWhen, progressAlong, trackingStatus } from "./busTracking";
+import { headingBetween, nextPollDelay, normalizeTrip, parseWhen, progressAlong, trackingStatus } from "./busTracking";
 import { tripLocation } from "./trips";
 
 const ROUTE = { route_name: "Pari Chowk - Saket", start_point: "Pari Chowk", end_point: "Saket", start_lat: 28.4646, start_lng: 77.5113, end_lat: 28.5206, end_lng: 77.2013 };
@@ -78,5 +78,39 @@ describe("progress and heading", () => {
     const h = headingBetween([28.4646, 77.5113], [28.47, 77.48]);
     expect(h).toBeGreaterThan(270);
     expect(h).toBeLessThan(300);
+  });
+});
+
+describe("production 404 / waiting cases", () => {
+  const trip = normalizeTrip(ROUTE, row()); // 10:00 - 11:00
+  it("a trip whose window passed without departing is 'Did not depart', not 'Waiting' or 'Live'", () => {
+    expect(trackingStatus(trip, null, at("11:30"), { started: false, completed: false, status: "on_time" })).toBe("missed");
+    expect(trackingStatus(trip, null, at("11:30"))).toBe("missed");
+  });
+  it("still inside its window with no position: waiting for the first location", () => {
+    expect(trackingStatus(trip, null, at("10:20"), { started: false })).toBe("unavailable");
+  });
+  it("departed but no position received (server says started): not 'missed'", () => {
+    expect(trackingStatus(trip, null, at("11:30"), { started: true })).toBe("unavailable");
+  });
+  it("server says completed: completed, even without a position", () => {
+    expect(trackingStatus(trip, null, at("11:30"), { completed: true, status: "delayed_completed" })).toBe("completed_late");
+  });
+  it("unknown trip: 'Trip not found'", () => expect(trackingStatus(trip, null, at("10:20"), { notFound: true })).toBe("not_found"));
+  it("a stale position (stopped updating) is not a trip that never started", () => {
+    expect(trackingStatus(trip, loc(), at("10:30"))).toBe("stale");
+    expect(trackingStatus(trip, null, at("09:30"))).toBe("not_started");
+  });
+});
+
+describe("nextPollDelay", () => {
+  it("never polls again for permanent outcomes", () => {
+    for (const s of ["not_found", "missed", "completed", "completed_late", "cancelled"]) expect(nextPollDelay(s)).toBeNull();
+  });
+  it("polls fast while moving, slowly before departure", () => {
+    expect([nextPollDelay("live"), nextPollDelay("unavailable"), nextPollDelay("not_started")]).toEqual([3000, 5000, 15000]);
+  });
+  it("backs off exponentially on failures, capped at 60 s", () => {
+    expect([1, 2, 3, 10].map((f) => nextPollDelay("live", f))).toEqual([6000, 12000, 24000, 60000]);
   });
 });

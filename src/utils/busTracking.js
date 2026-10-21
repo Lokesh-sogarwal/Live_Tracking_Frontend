@@ -52,17 +52,24 @@ export function normalizeTrip(route, schedule) {
   };
 }
 
-// The page's status for one trip. `location` is a position produced by THIS trip (or null).
-//   cancelled > completed > not_started > unavailable (started, no position yet) > delayed > stale > live
-export function trackingStatus(trip, location, now = new Date()) {
+// The page's status for one trip. `location` is a position produced by THIS trip (or null);
+// `server` is the trip's own state when it has no position yet ({ started, completed, status })
+// or { notFound: true }.
+//   not_found > cancelled > completed > not_started > missed (window passed, never departed) >
+//   unavailable (started, no position yet) > delayed > stale > live
+export function trackingStatus(trip, location, now = new Date(), server = null) {
   if (!trip) return "unavailable";
-  if (/cancel/.test(trip.status)) return "cancelled";
-  if (trip.isReached || location?.trip_completed) {
-    return /delayed_completed/.test(location?.trip_status || trip.status) ? "completed_late" : "completed";
+  if (server?.notFound) return "not_found";
+  const status = String(server?.status || trip.status || "").toLowerCase();
+  if (/cancel/.test(status)) return "cancelled";
+  if (trip.isReached || location?.trip_completed || server?.completed) {
+    return /delayed_completed/.test(location?.trip_status || status) ? "completed_late" : "completed";
   }
   const started = trip.startAt ? trip.startAt <= now : Boolean(location);
   if (!started && !location) return "not_started";
-  if (!location) return /delay/.test(trip.status) ? "delayed_waiting" : "unavailable";
+  // The simulation never starts a trip after its window; one that hasn't departed by then won't.
+  if (!location && !server?.started && trip.endAt && trip.endAt <= now) return "missed";
+  if (!location) return /delay/.test(status) ? "delayed_waiting" : "unavailable";
   if (/delay/.test(trip.status)) return "delayed";
   return isStale(location, now) ? "stale" : "live";
 }
@@ -84,6 +91,8 @@ export const STATUS_TEXT = {
   completed: "Completed",
   completed_late: "Completed late",
   cancelled: "Cancelled",
+  missed: "Did not depart",
+  not_found: "Trip not found",
 };
 export const STATUS_CHIP = {
   live: "live",
@@ -95,7 +104,19 @@ export const STATUS_CHIP = {
   completed: "completed",
   completed_late: "delayed_completed",
   cancelled: "error",
+  missed: "stale",
+  not_found: "error",
 };
+
+// How long to wait before asking again. Fast only while moving; slower before departure or
+// while waiting for a first position; never once the trip is over or unknown. Network/server
+// failures back off exponentially (x2 each, max 60 s).
+const POLL_BASE_MS = { live: 3000, delayed: 3000, stale: 3000, unavailable: 5000, delayed_waiting: 5000, not_started: 15000 };
+export function nextPollDelay(status, failures = 0) {
+  const base = POLL_BASE_MS[status];
+  if (!base) return null;
+  return failures > 0 ? Math.min(60_000, base * 2 ** failures) : base;
+}
 
 // Metres between [lat, lng] points.
 export function distance([lat1, lng1], [lat2, lng2]) {

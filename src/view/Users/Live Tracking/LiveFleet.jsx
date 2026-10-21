@@ -17,7 +17,7 @@ import {
   STATUS_LABELS, byStart, formatAge, formatClock, isInProgress, locationAgeSeconds, trackingState, tripStatus,
 } from "../../../utils/trips";
 
-const FILTERS = ["all", "live", "delayed", "stale", "awaiting", "not_started", "completed", "delayed_completed"];
+const FILTERS = ["all", "live", "delayed", "stale", "awaiting", "missed", "not_started", "completed", "delayed_completed"];
 const DEFAULT_CENTER = [28.6139, 77.209]; // only used before any position is known
 const POLL_FALLBACK_MS = 15000;
 

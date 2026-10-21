@@ -9,15 +9,12 @@ import API_BASE_URL from "../../../utils/config";
 import { StatusChip } from "../../../Components/ui";
 import BusMarker from "./BusMarker";
 import {
-  STATUS_CHIP, STATUS_TEXT, ageSeconds, clock, headingBetween, km, normalizeTrip, progressAlong, trackingStatus,
+  STATUS_CHIP, STATUS_TEXT, ageSeconds, clock, headingBetween, km, nextPollDelay, normalizeTrip, progressAlong, trackingStatus,
 } from "../../../utils/busTracking";
 import { formatAge } from "../../../utils/trips";
 
 // Tracks ONE trip. Positions are requested for this trip only (GET /view/get_location/:bus?
 // schedule_id=…), so a bus parked at the end of its previous trip is never drawn on this one.
-// Poll fast only while the bus is moving; a trip that hasn't started (or has no position yet)
-// is checked less often (each check is a 404 "no location for this trip yet").
-const POLL_MS = { live: 3000, delayed: 3000, stale: 3000, unavailable: 5000, delayed_waiting: 5000, not_started: 15000 };
 
 const pinIcon = (kind, label) =>
   L.divIcon({
@@ -72,6 +69,11 @@ function WaitingCard({ trip, variant, onRetry, retrying }) {
       body: "The bus will appear on the route once a valid location is received for this trip.",
     },
     completed: { title: "Trip completed", body: "This trip has finished. No final position was recorded for it." },
+    missed: {
+      title: "This trip didn't depart",
+      body: `Its scheduled time (${clock(trip.startAt)} – ${clock(trip.endAt)}) passed without any position from the bus, so it won't be tracked. It is not started late.`,
+    },
+    not_found: { title: "Trip not found", body: "This trip no longer exists for this bus. Go back to Live Tracking and choose a current trip." },
     cancelled: { title: "Trip cancelled", body: "This trip will not run." },
   }[variant];
   const animated = variant === "not_started" || variant === "unavailable" || variant === "delayed_waiting";
@@ -108,14 +110,16 @@ function WaitingCard({ trip, variant, onRetry, retrying }) {
   );
 }
 
-export default function BusTracking() {
+function BusTrackingPage() {
   const { state } = useLocation();
   const trip = useMemo(() => normalizeTrip(state?.route, state?.schedule), [state]);
   const token = localStorage.getItem("token");
 
   const [route, setRoute] = useState({ status: "loading", coords: [], provider: null });
   const [loc, setLoc] = useState(null); // position produced by this trip
-  const [fetchState, setFetchState] = useState({ checked: false, error: "", busy: false });
+  const [fetchState, setFetchState] = useState({ checked: false, error: "", busy: false, failures: 0 });
+  // The trip's own state from the server when it has no position yet (departed? finished?).
+  const [server, setServer] = useState(null);
   const [now, setNow] = useState(() => new Date());
   const [heading, setHeading] = useState(null);
   const [detailsOpen, setDetailsOpen] = useState(false);
@@ -152,34 +156,47 @@ export default function BusTracking() {
     setFetchState((s) => ({ ...s, busy: true }));
     try {
       const res = await fetch(`${API_BASE_URL}/view/get_location/${trip.busId}?schedule_id=${trip.scheduleId}`, { headers: { Authorization: `Bearer ${token}` } });
+      const data = await res.json().catch(() => ({}));
       if (res.status === 404) {
-        setLoc(null); // nothing for THIS trip yet
-        setFetchState({ checked: true, error: "", busy: false });
+        // TRIP_NOT_FOUND is permanent (polling stops). An older API answered 404 for "no
+        // position for this trip yet"; that is treated as an empty result.
+        if (data.code === "TRIP_NOT_FOUND") setServer({ notFound: true });
+        setLoc(null);
+        setFetchState({ checked: true, error: "", busy: false, failures: 0 });
         return;
       }
       if (!res.ok) throw new Error(String(res.status));
-      const data = await res.json();
+      if (data.location === null) {
+        // A real trip without a position yet (200): keep its state, not an error.
+        setLoc(null);
+        setServer({ started: data.trip_started, completed: data.trip_completed, status: data.trip_status });
+        setFetchState({ checked: true, error: "", busy: false, failures: 0 });
+        return;
+      }
       const ok = data.schedule_id === trip.scheduleId && Number.isFinite(data.latitude) && Number.isFinite(data.longitude) && Math.abs(data.latitude) <= 90 && Math.abs(data.longitude) <= 180;
       if (ok) {
         // Never step backwards in time (out-of-order responses).
         setLoc((prev) => (prev && new Date(prev.timestamp) > new Date(data.timestamp) ? prev : data));
       }
-      setFetchState({ checked: true, error: "", busy: false });
+      setFetchState({ checked: true, error: "", busy: false, failures: 0 });
     } catch {
-      setFetchState({ checked: true, error: "Couldn't reach the server. Retrying automatically.", busy: false });
+      // Network / server error: retried with exponential back-off (see nextPollDelay).
+      setFetchState((s) => ({ checked: true, error: "Couldn't reach the server. Retrying automatically.", busy: false, failures: s.failures + 1 }));
     }
   }, [trip, token]);
 
-  const status = trip ? trackingStatus(trip, loc, now) : "unavailable";
+  const status = trip ? trackingStatus(trip, loc, now, server) : "unavailable";
 
   useEffect(() => {
     fetchLocation();
   }, [fetchLocation]);
   useEffect(() => {
-    if (!POLL_MS[status]) return undefined;
-    const t = setInterval(fetchLocation, POLL_MS[status]);
-    return () => clearInterval(t);
-  }, [status, fetchLocation]);
+    // One timer at a time, re-armed after every answer; none once the trip is over or unknown.
+    const delay = nextPollDelay(status, fetchState.failures);
+    if (delay === null || fetchState.busy) return undefined;
+    const t = setTimeout(fetchLocation, delay);
+    return () => clearTimeout(t);
+  }, [status, fetchState, fetchLocation]);
   useEffect(() => {
     const t = setInterval(() => setNow(new Date()), 5000);
     return () => clearInterval(t);
@@ -212,7 +229,7 @@ export default function BusTracking() {
   const age = ageSeconds(loc, now);
   const done = status === "completed" || status === "completed_late";
   const showBus = Boolean(position) && ["live", "delayed", "stale"].concat(done ? [status] : []).includes(status);
-  const waiting = ["not_started", "unavailable", "delayed_waiting", "cancelled"].includes(status) || (done && !position);
+  const waiting = ["not_started", "unavailable", "delayed_waiting", "cancelled", "missed", "not_found"].includes(status) || (done && !position);
   const bounds = route.coords.length > 1 ? route.coords : [trip.origin, trip.destination].filter((p) => p.valid).map((p) => [p.lat, p.lng]);
   const center = bounds[0] || [28.6, 77.2];
   const busLabel = trip.busNumber ? `Bus ${trip.busNumber}` : "Bus";
@@ -362,4 +379,11 @@ export default function BusTracking() {
       </div>
     </div>
   );
+}
+
+// One fresh page per trip: switching from one trip to another (same route, new navigation
+// state) must not carry over the previous trip's position, status or "not found" answer.
+export default function BusTracking() {
+  const { state } = useLocation();
+  return <BusTrackingPage key={`${state?.schedule?.schedule_id ?? "none"}-${state?.schedule?.bus_id ?? ""}`} />;
 }

@@ -15,6 +15,8 @@ export const STATUS_LABELS = {
   not_started: "Not started",
   // Started by the timetable, but no position has been received for this trip.
   awaiting: "Awaiting location",
+  // Its scheduled window passed and the bus never departed (the simulation won't start it late).
+  missed: "Did not depart",
   completed: "Completed",
   // Reached the destination after its scheduled arrival (server status "delayed_completed").
   delayed_completed: "Completed late",
@@ -57,6 +59,8 @@ export function tripStatus(row, location, now = new Date()) {
   if (!hasStarted(row, now)) return "not_started";
   if (isDelayed(row)) return "delayed";
   const age = locationAgeSeconds(location, now);
+  // `started` (from GET /bus/schedules) says whether the bus actually departed.
+  if (age === null && row.started === false && tripEnd(row) && tripEnd(row) <= now) return "missed";
   if (age === null) return "awaiting";
   return age > STALE_AFTER_SECONDS ? "stale" : "live";
 }
